@@ -1,4 +1,4 @@
-import { createAIProvider } from '../../../dist/index.js';
+import { createAIProvider } from '../../../src/index';
 import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
 import * as path from 'node:path';
 

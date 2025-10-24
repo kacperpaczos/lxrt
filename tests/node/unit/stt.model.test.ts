@@ -1,4 +1,4 @@
-import { createAIProvider } from '../../../dist/index.js';
+import { createAIProvider, init } from '../../../src/index';
 import { readFileSync } from 'node:fs';
 import * as path from 'node:path';
 
@@ -12,6 +12,7 @@ describe('STT Model (Node + ORT)', () => {
   });
 
   beforeAll(async () => {
+    await init();
     await provider.warmup('stt');
   });
 
@@ -20,11 +21,13 @@ describe('STT Model (Node + ORT)', () => {
   });
 
   it('transkrybuje krótki WAV z fixtures', async () => {
-    const wavPath = path.join(__dirname, '../../../fixtures/audio/test.wav');
+    const wavPath = path.join(__dirname, '../../fixtures/audio/test.wav');
     const buf = readFileSync(wavPath);
-    const blob = new Blob([buf], { type: 'audio/wav' });
-
-    const text = await provider.listen(blob, { language: 'en', task: 'transcribe' });
+    
+    // Convert buffer to Float32Array for Node.js environment
+    const audioData = new Float32Array(buf.buffer, buf.byteOffset, buf.byteLength / 4);
+    
+    const text = await provider.listen(audioData, { language: 'en', task: 'transcribe' });
     expect(typeof text).toBe('string');
     expect(text.length).toBeGreaterThan(0);
   }, 180000);

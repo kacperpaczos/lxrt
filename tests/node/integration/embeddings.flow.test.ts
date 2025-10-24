@@ -1,4 +1,4 @@
-import { createAIProvider } from '../../../dist/index.js';
+import { createAIProvider } from '../../../src/index';
 
 describe('Integration: Embeddings flow (Node + ORT)', () => {
   const provider = createAIProvider({

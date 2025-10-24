@@ -1,4 +1,4 @@
-import { createAIProvider } from '../../../dist/index.js';
+import { createAIProvider, init } from '../../../src/index';
 
 describe('Embeddings Model (Node + ORT)', () => {
   const provider = createAIProvider({
@@ -10,6 +10,7 @@ describe('Embeddings Model (Node + ORT)', () => {
   });
 
   beforeAll(async () => {
+    await init();
     await provider.warmup('embedding');
   });
 
