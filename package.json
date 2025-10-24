@@ -98,11 +98,8 @@
     "LICENSE",
     "examples"
   ],
-  "peerDependencies": {
-    "@huggingface/transformers": "^3.0.0"
-  },
   "devDependencies": {
-    "@huggingface/transformers": "^3.2.2",
+    "@huggingface/transformers": "^3.7.6",
     "@playwright/test": "^1.56.0",
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.0",
@@ -122,8 +119,8 @@
     "jest": "^30.2.0",
     "jest-environment-jsdom": "^30.2.0",
     "lint-staged": "^16.2.4",
-    "onnxruntime-common": "1.18.0",
-    "onnxruntime-node": "1.18.0",
+    "onnxruntime-common": "^1.23.0",
+    "onnxruntime-node": "^1.23.0",
     "prettier": "^3.6.2",
     "ts-jest": "^29.4.5",
     "typescript": "^5.9.3",
