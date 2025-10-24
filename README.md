@@ -1013,8 +1013,9 @@ npm run test:node:all
 # 6. Run only lightweight tests (no heavy LLM/TTS)
 npm run test:node:unit
 
-# 7. Run multimodal tests (requires heavy models)
-RUN_LLM=1 RUN_TTS=1 npm run test:node:integration
+# 7. Disable modalities if needed for faster testing
+RUN_LLM=0 npm run test:node:integration  # Disable LLM only
+RUN_TTS=0 npm run test:node:integration  # Disable TTS only
 ```
 
 ## Node.js Testing with Real Models
@@ -1047,25 +1048,32 @@ npm run test:node:integration
 # Run all Node tests
 npm run test:node:all
 
-# Run multimodal tests (requires heavy models, skipped by default)
-RUN_LLM=1 RUN_TTS=1 npm run test:node:integration
+# Run multimodal tests (all modalities enabled by default)
+npm run test:node:integration
+
+# Disable specific modalities if needed for faster testing
+RUN_LLM=0 npm run test:node:integration  # Disable LLM only
+RUN_TTS=0 npm run test:node:integration  # Disable TTS only
 ```
 
 ### Test Features
 
 - **Real Models**: Tests use actual Transformers.js models via ONNX Runtime
 - **Lightweight by Default**: Uses micro-models (<100MB) for fast CI/CD
-- **Optional Heavy Tests**: LLM/TTS tests can be enabled with environment variables
+- **Comprehensive by Default**: LLM/TTS tests enabled by default for full validation
+- **Audio Recording**: All tests save timestamped audio files for validation
 - **No Mocks**: All tests validate actual model inference
 - **Node Environment**: Optimized for server-side testing with proper cache management
 
 ### Model Configuration for Tests
 
 Tests are configured to use micro-models for performance:
-- **STT**: `Xenova/whisper-tiny` (~40MB)
-- **Embeddings**: `Xenova/all-MiniLM-L6-v2` (~80MB)
-- **LLM**: `Xenova/gpt2` (optional, ~500MB)
-- **TTS**: `Xenova/speecht5_tts` (optional, ~300MB)
+- **STT**: `Xenova/whisper-tiny` (~40MB) - always enabled
+- **Embeddings**: `Xenova/all-MiniLM-L6-v2` (~80MB) - always enabled
+- **LLM**: `Xenova/gpt2` (~500MB) - **enabled by default**
+- **TTS**: `Xenova/speecht5_tts` (~300MB) - **enabled by default**
+
+**Audio Recordings**: All tests save audio files with timestamps to `test-audio-recordings/` directory for validation and debugging.
 
 ## Performance Tips
 
