@@ -1,4 +1,4 @@
-import { createAIProvider } from '../../../src/index';
+import { createAIProvider, init } from '../../../src/index';
 import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
 import * as path from 'node:path';
 
@@ -27,6 +27,7 @@ describe('Integration: STT flow (Node + ORT)', () => {
   });
 
   beforeAll(async () => {
+    await init();
     await provider.warmup('stt');
   });
 
@@ -35,7 +36,7 @@ describe('Integration: STT flow (Node + ORT)', () => {
   });
 
   it('warmup → listen → dispose', async () => {
-    const wavPath = path.join(__dirname, '../../../fixtures/audio/test.wav');
+    const wavPath = path.join(__dirname, '../../fixtures/audio/test.wav');
     const buf = readFileSync(wavPath);
     const blob = new Blob([buf], { type: 'audio/wav' });
 

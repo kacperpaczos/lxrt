@@ -1,4 +1,4 @@
-import { createAIProvider } from '../../../src/index';
+import { createAIProvider, init } from '../../../src/index';
 
 describe('Integration: Embeddings flow (Node + ORT)', () => {
   const provider = createAIProvider({
@@ -10,6 +10,7 @@ describe('Integration: Embeddings flow (Node + ORT)', () => {
   });
 
   beforeAll(async () => {
+    await init();
     await provider.warmup('embedding');
   });
 

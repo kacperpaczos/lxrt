@@ -1,7 +1,7 @@
 /** @type {import('ts-jest').JestConfigWithTsJest} */
 module.exports = {
   preset: 'ts-jest',
-  testEnvironment: 'node',
+  testEnvironment: 'jest-environment-node-single-context',
   setupFilesAfterEnv: ['<rootDir>/tests/node/setup.ts'],
   testMatch: ['**/tests/node/**/?(*.)+(spec|test).ts'],
   testPathIgnorePatterns: [

@@ -1,4 +1,4 @@
-import { createAIProvider } from '../../../src/index';
+import { createAIProvider, init } from '../../../src/index';
 import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
 import * as path from 'node:path';
 
@@ -33,6 +33,7 @@ describe('Integration: Multimodal flow (Node + ORT)', () => {
     });
 
     beforeAll(async () => {
+      await init();
       await provider.warmup('stt');
     });
 
@@ -41,7 +42,7 @@ describe('Integration: Multimodal flow (Node + ORT)', () => {
     });
 
     it('STT processes audio correctly', async () => {
-      const wavPath = path.join(__dirname, '../../../fixtures/audio/test.wav');
+      const wavPath = path.join(__dirname, '../../fixtures/audio/test.wav');
       const buf = readFileSync(wavPath);
       const blob = new Blob([buf], { type: 'audio/wav' });
 
@@ -64,6 +65,7 @@ describe('Integration: Multimodal flow (Node + ORT)', () => {
     });
 
     beforeAll(async () => {
+      await init();
       await Promise.all([
         provider.warmup('stt'),
         provider.warmup('llm'),
@@ -76,7 +78,7 @@ describe('Integration: Multimodal flow (Node + ORT)', () => {
 
     it('STT → LLM conversation', async () => {
       // STT: audio → text
-      const wavPath = path.join(__dirname, '../../../fixtures/audio/test.wav');
+      const wavPath = path.join(__dirname, '../../fixtures/audio/test.wav');
       const buf = readFileSync(wavPath);
       const blob = new Blob([buf], { type: 'audio/wav' });
 
@@ -117,7 +119,7 @@ describe('Integration: Multimodal flow (Node + ORT)', () => {
 
     it('STT → LLM → TTS roundtrip', async () => {
       // STT: audio → text
-      const wavPath = path.join(__dirname, '../../../fixtures/audio/test.wav');
+      const wavPath = path.join(__dirname, '../../fixtures/audio/test.wav');
       const buf = readFileSync(wavPath);
       const blob = new Blob([buf], { type: 'audio/wav' });
 
