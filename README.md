@@ -1006,7 +1006,66 @@ npm run test:all
 
 # 4. Debug failing tests
 npm run test:integration:ui
+
+# 5. Run new Node.js tests with real models
+npm run test:node:all
+
+# 6. Run only lightweight tests (no heavy LLM/TTS)
+npm run test:node:unit
+
+# 7. Run multimodal tests (requires heavy models)
+RUN_LLM=1 RUN_TTS=1 npm run test:node:integration
 ```
+
+## Node.js Testing with Real Models
+
+The project includes comprehensive Node.js tests that use real AI models through ONNX Runtime (no mocks). These tests provide better validation of actual functionality.
+
+### Test Structure
+
+```
+tests/
+├── tests_old/                    # Legacy tests (mocks, Playwright)
+│   ├── unit/                    # Old unit tests with mocks
+│   ├── integration/             # Old integration tests
+│   ├── integration-browser/     # Browser-based tests with Playwright
+│   └── e2e/                     # End-to-end tests
+└── node/                        # New Node.js tests with real models
+    ├── unit/                    # Unit tests (STT, embeddings, adapters)
+    └── integration/             # Integration tests (flows, multimodal)
+```
+
+### Running Node Tests
+
+```bash
+# Run lightweight unit tests (STT, embeddings, adapters)
+npm run test:node:unit
+
+# Run integration tests (STT flow)
+npm run test:node:integration
+
+# Run all Node tests
+npm run test:node:all
+
+# Run multimodal tests (requires heavy models, skipped by default)
+RUN_LLM=1 RUN_TTS=1 npm run test:node:integration
+```
+
+### Test Features
+
+- **Real Models**: Tests use actual Transformers.js models via ONNX Runtime
+- **Lightweight by Default**: Uses micro-models (<100MB) for fast CI/CD
+- **Optional Heavy Tests**: LLM/TTS tests can be enabled with environment variables
+- **No Mocks**: All tests validate actual model inference
+- **Node Environment**: Optimized for server-side testing with proper cache management
+
+### Model Configuration for Tests
+
+Tests are configured to use micro-models for performance:
+- **STT**: `Xenova/whisper-tiny` (~40MB)
+- **Embeddings**: `Xenova/all-MiniLM-L6-v2` (~80MB)
+- **LLM**: `Xenova/gpt2` (optional, ~500MB)
+- **TTS**: `Xenova/speecht5_tts` (optional, ~300MB)
 
 ## Performance Tips
 
@@ -1037,7 +1096,15 @@ npm run test:integration:ui
 - [x] Browser-based integration tests
 - [x] E2E testing with Playwright
 
-### Phase 3 (Planned)
+### Phase 3: Node.js Real Model Testing (Completed ✅)
+- [x] ONNX Runtime integration for Node.js testing
+- [x] Real model tests without mocks
+- [x] Micro-model configuration for fast CI/CD
+- [x] Multimodal integration tests (STT → LLM → TTS)
+- [x] Environment-based test configuration
+- [x] Comprehensive Node.js test coverage
+
+### Phase 4 (Planned)
 - [ ] Advanced streaming (token-by-token to UI)
 - [ ] Batch processing
 - [ ] Model quantization on-the-fly

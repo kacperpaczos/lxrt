@@ -19,7 +19,6 @@ import { TTSModel } from '../models/TTSModel';
 import { STTModel } from '../models/STTModel';
 import { EmbeddingModel } from '../models/EmbeddingModel';
 import { OCRModel } from '../models/OCRModel';
-import { ProgressTracker } from '../utils/ProgressTracker';
 import { EventEmitter } from '@infra/events/EventEmitter';
 import { getConfig } from './state';
 import { ModelUnavailableError } from '@domain/errors';
@@ -30,7 +29,6 @@ export class ModelManager {
   private cache: ModelCache;
   private models: Map<Modality, BaseModel>;
   private configs: Map<Modality, ModelConfig>;
-  private progressTracker: ProgressTracker;
   private eventEmitter: EventEmitter;
   private autoScaler: AutoScaler;
   private backendSelector: BackendSelector;
@@ -40,7 +38,6 @@ export class ModelManager {
     this.models = new Map();
     this.configs = new Map();
     this.eventEmitter = eventEmitter;
-    this.progressTracker = new ProgressTracker(eventEmitter);
     this.backendSelector = new BackendSelector();
     this.autoScaler = new AutoScaler(this.backendSelector);
   }
@@ -81,10 +78,25 @@ export class ModelManager {
     const model = this.createModelInstance(modality, scaledConfig);
 
     // Create progress callback
-    const progressCallback = this.progressTracker.createCallback(
-      modality,
-      config.model
-    );
+    const progressCallback = (progress: {
+      status: string;
+      file?: string;
+      progress?: number;
+      loaded?: number;
+      total?: number;
+    }) => {
+      // Map status to expected enum values
+      const mappedStatus = this.mapStatus(progress.status);
+      this.eventEmitter.emit('progress', {
+        modality,
+        model: (scaledConfig as ModelConfig).model!,
+        file: progress.file,
+        progress: progress.progress,
+        loaded: progress.loaded,
+        total: progress.total,
+        status: mappedStatus,
+      });
+    };
 
     try {
       await model.load(progressCallback);
@@ -100,7 +112,7 @@ export class ModelManager {
       // Emit ready event
       this.eventEmitter.emit('ready', {
         modality,
-        model: scaledConfig.model,
+        model: (scaledConfig as ModelConfig).model!,
       });
 
       return model;
@@ -197,7 +209,6 @@ export class ModelManager {
     const modalities = Array.from(this.models.keys());
     await Promise.all(modalities.map(modality => this.unloadModel(modality)));
     this.cache.clear();
-    this.progressTracker.clearAll();
   }
 
   /**
@@ -253,5 +264,32 @@ export class ModelManager {
    */
   getBackendSelector(): BackendSelector {
     return this.backendSelector;
+  }
+
+  /**
+   * Map status string to expected enum values
+   */
+  private mapStatus(
+    status: string
+  ): 'downloading' | 'loading' | 'ready' | 'error' {
+    switch (status.toLowerCase()) {
+      case 'downloading':
+      case 'download':
+        return 'downloading';
+      case 'loading':
+      case 'load':
+      case 'initializing':
+        return 'loading';
+      case 'ready':
+      case 'complete':
+      case 'success':
+        return 'ready';
+      case 'error':
+      case 'failed':
+      case 'fail':
+        return 'error';
+      default:
+        return 'loading'; // fallback
+    }
   }
 }

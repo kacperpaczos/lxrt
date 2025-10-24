@@ -444,7 +444,10 @@ export class AIProvider {
         'Vectorization service not initialized. Call initializeVectorization first.'
       );
     }
-    yield* this.vectorizationService.vectorizeWithProgress(input, options);
+    return yield* this.vectorizationService.vectorizeWithProgress(
+      input,
+      options
+    );
   }
 
   /**
@@ -462,7 +465,7 @@ export class AIProvider {
         'Vectorization service not initialized. Call initializeVectorization first.'
       );
     }
-    yield* this.vectorizationService.queryWithProgress(input, options);
+    return yield* this.vectorizationService.queryWithProgress(input, options);
   }
 
   /**

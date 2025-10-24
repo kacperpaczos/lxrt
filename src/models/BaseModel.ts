@@ -74,7 +74,7 @@ export abstract class BaseModel<TConfig extends ModelConfig = ModelConfig> {
     if (!this.pipeline) {
       throw new ModelNotLoadedError(
         `Model not loaded: ${this.config.model}`,
-        this.config.model,
+        this.config.model!,
         this.modality
       );
     }
@@ -112,7 +112,7 @@ export abstract class BaseModel<TConfig extends ModelConfig = ModelConfig> {
     if (!this.loaded) {
       throw new ModelNotLoadedError(
         `Failed to load model: ${this.config.model}`,
-        this.config.model,
+        this.config.model!,
         this.modality
       );
     }
