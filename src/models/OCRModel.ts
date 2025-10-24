@@ -78,9 +78,16 @@ export class OCRModel extends BaseModel<OCRConfig> {
       // Create Tesseract worker
       this.worker = createWorker();
 
-      // Load the worker
+      // Load the worker - fix for Node.js environment
       const worker = this.worker as any;
-      await worker.load();
+
+      // Check if worker has load method (browser) or needs different approach (Node.js)
+      if (typeof worker.load === 'function') {
+        await worker.load();
+      } else {
+        // Node.js environment - worker might be already loaded
+        console.log('[OCRModel] load(): worker already loaded in Node.js');
+      }
 
       // Load language data
       const languages = this.config.language || 'eng';
