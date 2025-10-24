@@ -44,13 +44,16 @@ describe('Integration: Multimodal flow (Node + ORT)', () => {
     it('STT processes audio correctly', async () => {
       const wavPath = path.join(__dirname, '../../fixtures/audio/test.wav');
       const buf = readFileSync(wavPath);
-      const blob = new Blob([buf], { type: 'audio/wav' });
+      
+      // Convert buffer to Float32Array for Node.js environment
+      const audioData = new Float32Array(buf.buffer, buf.byteOffset, buf.byteLength / 4);
 
       // Save original audio with timestamp for reference
+      const blob = new Blob([buf], { type: 'audio/wav' });
       const originalAudioPath = await saveAudioWithTimestamp(blob, 'stt-input');
       expect(originalAudioPath).toContain('test-audio-recordings');
 
-      const text = await provider.listen(blob, { language: 'en' });
+      const text = await provider.listen(audioData, { language: 'en' });
       expect(typeof text).toBe('string');
       expect(text.length).toBeGreaterThan(0);
 
@@ -76,26 +79,29 @@ describe('Integration: Multimodal flow (Node + ORT)', () => {
       await provider.dispose();
     });
 
-    it('STT → LLM conversation', async () => {
-      // STT: audio → text
-      const wavPath = path.join(__dirname, '../../fixtures/audio/test.wav');
-      const buf = readFileSync(wavPath);
-      const blob = new Blob([buf], { type: 'audio/wav' });
+        it('STT → LLM conversation', async () => {
+          // STT: audio → text
+          const wavPath = path.join(__dirname, '../../fixtures/audio/test.wav');
+          const buf = readFileSync(wavPath);
+          
+          // Convert buffer to Float32Array for Node.js environment
+          const audioData = new Float32Array(buf.buffer, buf.byteOffset, buf.byteLength / 4);
 
-      // Save original audio with timestamp for reference
-      const originalAudioPath = await saveAudioWithTimestamp(blob, 'llm-stt-input');
-      expect(originalAudioPath).toContain('test-audio-recordings');
+          // Save original audio with timestamp for reference
+          const blob = new Blob([buf], { type: 'audio/wav' });
+          const originalAudioPath = await saveAudioWithTimestamp(blob, 'llm-stt-input');
+          expect(originalAudioPath).toContain('test-audio-recordings');
 
-      const transcribedText = await provider.listen(blob, { language: 'en' });
+          const transcribedText = await provider.listen(audioData, { language: 'en' });
 
-      // LLM: process transcribed text
-      const response = await provider.chat(`Respond to: "${transcribedText}"`);
-      expect(response.content).toBeDefined();
-      expect(response.content.length).toBeGreaterThan(0);
+          // LLM: process transcribed text
+          const response = await provider.chat(`Respond to: "${transcribedText}"`);
+          expect(response.content).toBeDefined();
+          expect(response.content.length).toBeGreaterThan(0);
 
-      console.log(`✅ STT transcribed: "${transcribedText}"`);
-      console.log(`✅ LLM responded: "${response.content}"`);
-    }, 300000);
+          console.log(`✅ STT transcribed: "${transcribedText}"`);
+          console.log(`✅ LLM responded: "${response.content}"`);
+        }, 300000);
   });
 
   (RUN_TTS_TESTS ? describe : describe.skip)('Full multimodal chain', () => {
@@ -117,38 +123,41 @@ describe('Integration: Multimodal flow (Node + ORT)', () => {
       await provider.dispose();
     });
 
-    it('STT → LLM → TTS roundtrip', async () => {
-      // STT: audio → text
-      const wavPath = path.join(__dirname, '../../fixtures/audio/test.wav');
-      const buf = readFileSync(wavPath);
-      const blob = new Blob([buf], { type: 'audio/wav' });
+        it('STT → LLM → TTS roundtrip', async () => {
+          // STT: audio → text
+          const wavPath = path.join(__dirname, '../../fixtures/audio/test.wav');
+          const buf = readFileSync(wavPath);
+          
+          // Convert buffer to Float32Array for Node.js environment
+          const audioData = new Float32Array(buf.buffer, buf.byteOffset, buf.byteLength / 4);
 
-      // Save original audio with timestamp for reference
-      const originalAudioPath = await saveAudioWithTimestamp(blob, 'multimodal-input');
-      expect(originalAudioPath).toContain('test-audio-recordings');
-      expect(originalAudioPath).toContain('multimodal-input_');
+          // Save original audio with timestamp for reference
+          const blob = new Blob([buf], { type: 'audio/wav' });
+          const originalAudioPath = await saveAudioWithTimestamp(blob, 'multimodal-input');
+          expect(originalAudioPath).toContain('test-audio-recordings');
+          expect(originalAudioPath).toContain('multimodal-input_');
 
-      const transcribedText = await provider.listen(blob, { language: 'en' });
+          const transcribedText = await provider.listen(audioData, { language: 'en' });
 
-      // LLM: respond to transcribed text
-      const response = await provider.chat(`Say something about: "${transcribedText}"`);
-      expect(response.content.length).toBeGreaterThan(0);
+          // LLM: respond to transcribed text
+          const response = await provider.chat(`Say something about: "${transcribedText}"`);
+          expect(response.content.length).toBeGreaterThan(0);
 
-      // TTS: text → audio
-      const speakerEmbeddings = new Float32Array(512).fill(0.5); // Simple default
-      const audioBlob = await provider.speak(response.content, {
-        speaker: speakerEmbeddings,
-      });
+          // TTS: text → audio
+          const speakerEmbeddings = new Float32Array(512).fill(0.5); // Simple default
+          const audioBlob = await provider.speak(response.content, {
+            speaker: speakerEmbeddings,
+          });
 
-      expect(audioBlob).toBeInstanceOf(Blob);
-      expect(audioBlob.size).toBeGreaterThan(1000); // Should have some content
+          expect(audioBlob).toBeInstanceOf(Blob);
+          expect(audioBlob.size).toBeGreaterThan(1000); // Should have some content
 
-      // Save TTS audio recording with timestamp for validation
-      const savedAudioPath = await saveAudioWithTimestamp(audioBlob, 'multimodal-tts');
-      expect(savedAudioPath).toContain('test-audio-recordings');
-      expect(savedAudioPath).toContain('multimodal-tts_');
+          // Save TTS audio recording with timestamp for validation
+          const savedAudioPath = await saveAudioWithTimestamp(audioBlob, 'multimodal-tts');
+          expect(savedAudioPath).toContain('test-audio-recordings');
+          expect(savedAudioPath).toContain('multimodal-tts_');
 
-      console.log(`✅ Multimodal chain: "${transcribedText}" → LLM → TTS saved`);
-    }, 600000); // Long timeout for heavy models
+          console.log(`✅ Multimodal chain: "${transcribedText}" → LLM → TTS saved`);
+        }, 600000); // Long timeout for heavy models
   });
 });

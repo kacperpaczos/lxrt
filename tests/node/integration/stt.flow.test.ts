@@ -38,14 +38,17 @@ describe('Integration: STT flow (Node + ORT)', () => {
   it('warmup → listen → dispose', async () => {
     const wavPath = path.join(__dirname, '../../fixtures/audio/test.wav');
     const buf = readFileSync(wavPath);
-    const blob = new Blob([buf], { type: 'audio/wav' });
+    
+    // Convert buffer to Float32Array for Node.js environment
+    const audioData = new Float32Array(buf.buffer, buf.byteOffset, buf.byteLength / 4);
 
     // Save original audio with timestamp for reference
+    const blob = new Blob([buf], { type: 'audio/wav' });
     const originalAudioPath = await saveAudioWithTimestamp(blob, 'stt-input');
     expect(originalAudioPath).toContain('test-audio-recordings');
     expect(originalAudioPath).toContain('stt-input_');
 
-    const text = await provider.listen(blob, { language: 'en' });
+    const text = await provider.listen(audioData, { language: 'en' });
     expect(typeof text).toBe('string');
     expect(text.length).toBeGreaterThan(0);
 
