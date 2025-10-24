@@ -126,6 +126,16 @@ npm install @tensorflow/tfjs-node
 
 ## 📝 Jak uruchomić
 
+### Wymagania wstępne
+```bash
+# Sprawdź wersję Node.js
+node --version  # Wymagane: >= 22.21.0
+
+# Użyj nvm jeśli masz starszą wersję
+nvm use
+```
+
+### Uruchamianie testów
 ```bash
 # Wszystkie testy Node.js
 npm run test:node:all
@@ -133,7 +143,7 @@ npm run test:node:all
 # Tylko testy jednostkowe
 npm run test:node:unit
 
-# Tylko testy integracyjne  
+# Tylko testy integracyjne
 npm run test:node:integration
 
 # Z wyłączonymi ciężkimi modelami

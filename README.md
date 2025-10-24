@@ -17,6 +17,19 @@ A powerful TypeScript wrapper for [Transformers.js](https://huggingface.co/docs/
 - 💪 **TypeScript First** - Full type safety and IntelliSense support
 - 🌐 **Universal** - Works in Node.js and browsers
 
+## Requirements
+
+- **Node.js**: >= 22.21.0 (recommended)
+- **npm**: Latest version
+
+```bash
+# Using nvm (recommended)
+nvm use
+
+# Check Node.js version
+node --version  # Should be >= 22.21.0
+```
+
 ## Installation
 
 ```bash
