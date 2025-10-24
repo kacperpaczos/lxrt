@@ -59,10 +59,14 @@ FAIL  tests/node/unit/stt.model.test.ts
 TypeError: A float32 tensor's data must be type of function Float32Array() { [native code] }
 ```
 
+**Zaktualizowane wersje (bez poprawy):**
+- `@huggingface/transformers`: 3.7.6 (z 3.2.2)
+- `onnxruntime-node`: 1.23.0 (z 1.18.0)
+
 ## 🔧 Problem techniczny
 
 ### Opis problemu
-ONNX Runtime Node (`onnxruntime-node` v1.18.0) ma znaną niekompatybilność z `@huggingface/transformers` v3.2.2 w zakresie typów tensorów Float32Array.
+ONNX Runtime Node ma znaną niekompatybilność z `@huggingface/transformers` w zakresie typów tensorów Float32Array, nawet po aktualizacji do najnowszych wersji (transformers 3.7.6, onnxruntime-node 1.23.0).
 
 ### Co działa
 ✅ Ładowanie modeli (whisper-tiny, all-MiniLM-L6-v2)
@@ -144,6 +148,7 @@ RUN_LLM=0 RUN_TTS=0 npm run test:node:integration
 
 ---
 
-**Data raportu:** $(date +"%Y-%m-%d %H:%M")
+**Data raportu:** 2025-10-24 21:00
 **Gałąź:** feat/node-ort-tests
 **Autor:** AI Assistant
+**Aktualizacja:** Zaktualizowane dependencies do najnowszych wersji
