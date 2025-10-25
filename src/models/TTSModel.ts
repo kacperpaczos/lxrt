@@ -226,6 +226,7 @@ export class TTSModel extends BaseModel<TTSConfig> {
     } finally {
       this.loading = false;
     }
+    return Promise.resolve();
   }
 
   /**
@@ -243,8 +244,8 @@ export class TTSModel extends BaseModel<TTSConfig> {
     }>;
 
     try {
-      // Domyślne speaker embeddings dla SpeechT5, jeśli nie podano
-      // (zgodnie z testami integracyjnymi: wektor 512 x 0.5)
+      // Default speaker embeddings for SpeechT5 if not provided
+      // (based on integration tests: 512 vector filled with 0.5)
       const defaultSpeaker = new Float32Array(512).fill(0.5);
       let speakerEmbeddings: Float32Array = defaultSpeaker;
       let voiceParams: Record<string, unknown> = {};

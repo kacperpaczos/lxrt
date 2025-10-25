@@ -237,6 +237,7 @@ export class STTModel extends BaseModel<STTConfig> {
     } finally {
       this.loading = false;
     }
+    return Promise.resolve();
   }
 
   /**

@@ -13,7 +13,7 @@ export type {
   VoiceProfileOptions,
 } from './VoiceProfile';
 
-// Wspierane modalności
+// Supported modalities
 export type Modality = 'llm' | 'tts' | 'stt' | 'embedding' | 'ocr';
 
 // Vectorization modalities (for multimedia embeddings)
@@ -52,7 +52,7 @@ export interface TTSConfig {
   device?: Device;
   speaker?: string | Float32Array;
   sampleRate?: number;
-  voiceProfile?: string; // ID profilu głosowego
+  voiceProfile?: string; // voice profile ID
 }
 
 // STT Configuration
@@ -77,10 +77,10 @@ export interface EmbeddingConfig {
 
 // OCR Configuration
 export interface OCRConfig {
-  model?: string; // dla kompatybilności (Tesseract używa własnych modeli)
+  model?: string; // for compatibility (Tesseract uses its own models)
   dtype?: DType;
   device?: Device;
-  language?: string | string[]; // np. 'eng', 'pol', ['eng', 'pol']
+  language?: string | string[]; // e.g. 'eng', 'pol', ['eng', 'pol']
   performanceMode?: 'auto' | 'fast' | 'quality';
 }
 
@@ -123,7 +123,7 @@ export interface CompletionOptions {
 // TTS Options
 export interface TTSOptions {
   speaker?: string | Float32Array | Float64Array;
-  voiceProfile?: string; // ID profilu głosowego
+  voiceProfile?: string; // voice profile ID
   speed?: number;
   pitch?: number;
   quality?: number;
@@ -150,17 +150,17 @@ export interface EmbeddingOptions {
 // OCR Options
 export interface OCROptions {
   language?: string | string[];
-  includeBbox?: boolean; // zwrócić współrzędne bounding box
-  includeConfidence?: boolean; // zwrócić poziom pewności
+  includeBbox?: boolean; // return bounding box coordinates
+  includeConfidence?: boolean; // return confidence level
   psm?: number; // Page Segmentation Mode (0-13)
   oem?: number; // OCR Engine Mode (0-3)
-  autoLanguage?: boolean; // włącz automatyczne wykrywanie języka, gdy language nie podano
-  allowedLanguages?: string[]; // lista wspieranych języków do których ograniczamy ranking (np. ['eng','pol'])
-  detectionMinTextLength?: number; // minimalna długość tekstu do detekcji języka (domyślnie 20)
-  detectionMaxCandidates?: number; // ilu kandydatów zwrócić w rankingu (domyślnie 5)
-  autoPSM?: boolean; // automatyczny dobór PSM na podstawie układu tekstu
-  autoWhitelist?: boolean; // automatyczna whitelist znaków na podstawie języka
-  preprocess?: 'none' | 'fast'; // opcjonalne proste preprocessing (placeholder)
+  autoLanguage?: boolean; // enable automatic language detection when language not provided
+  allowedLanguages?: string[]; // list of supported languages to limit ranking (e.g. ['eng','pol'])
+  detectionMinTextLength?: number; // minimum text length for language detection (default 20)
+  detectionMaxCandidates?: number; // number of candidates to return in ranking (default 5)
+  autoPSM?: boolean; // automatic PSM selection based on text layout
+  autoWhitelist?: boolean; // automatic character whitelist based on language
+  preprocess?: 'none' | 'fast'; // optional simple preprocessing (placeholder)
 }
 
 // OCR Result
@@ -177,8 +177,8 @@ export interface OCRResult {
     bbox: { x0: number; y0: number; x1: number; y1: number };
     confidence: number;
   }>;
-  usedLanguage?: string; // język faktycznie użyty do końcowego rozpoznania
-  detectedLanguages?: Array<{ lang: string; score: number }>; // ranking języków ISO-639-3
+  usedLanguage?: string; // language actually used for final recognition
+  detectedLanguages?: Array<{ lang: string; score: number }>; // language ranking ISO-639-3
 }
 
 // Chat Message

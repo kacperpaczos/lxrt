@@ -17,7 +17,7 @@ describe('ProgressTracker (Node + ORT)', () => {
     expect(tracker).toBeInstanceOf(ProgressTracker);
   });
 
-  it('obsługuje progress events', (done) => {
+  it('handles progress events', (done) => {
     const testProgress = {
       stage: 'loading',
       progress: 50,
@@ -35,7 +35,7 @@ describe('ProgressTracker (Node + ORT)', () => {
     tracker.emit('progress', testProgress);
   });
 
-  it('obsługuje error events', (done) => {
+  it('handles error events', (done) => {
     const testError = new Error('Test error');
 
     tracker.on('error', (error) => {
@@ -47,7 +47,7 @@ describe('ProgressTracker (Node + ORT)', () => {
     tracker.emit('error', testError);
   });
 
-  it('obsługuje complete events', (done) => {
+  it('handles complete events', (done) => {
     const testResult = {
       success: true,
       duration: 1000,
@@ -65,7 +65,7 @@ describe('ProgressTracker (Node + ORT)', () => {
     tracker.emit('complete', testResult);
   });
 
-  it('obsługuje multiple listeners', () => {
+  it('handles multiple listeners', () => {
     let callCount = 0;
     const listener = () => { callCount++; };
 
@@ -78,7 +78,7 @@ describe('ProgressTracker (Node + ORT)', () => {
     expect(callCount).toBe(3);
   });
 
-  it('obsługuje listener removal', () => {
+  it('handles listener removal', () => {
     let callCount = 0;
     const listener = () => { callCount++; };
 
@@ -90,7 +90,7 @@ describe('ProgressTracker (Node + ORT)', () => {
     expect(callCount).toBe(0);
   });
 
-  it('obsługuje once listeners', () => {
+  it('handles once listeners', () => {
     let callCount = 0;
     const listener = () => { callCount++; };
 
@@ -102,7 +102,7 @@ describe('ProgressTracker (Node + ORT)', () => {
     expect(callCount).toBe(1);
   });
 
-  it('obsługuje progress tracking', () => {
+  it('handles progress tracking', () => {
     tracker.update('test-operation', 0, 'Starting');
     
     const progress = tracker.getProgress('test-operation');
@@ -121,7 +121,7 @@ describe('ProgressTracker (Node + ORT)', () => {
     expect(progressComplete?.message).toBe('Done!');
   });
 
-  it('obsługuje progress chaining', () => {
+  it('handles progress chaining', () => {
     tracker.update('chained-operation', 25, 'Step 1');
     tracker.update('chained-operation', 50, 'Step 2');
     tracker.update('chained-operation', 75, 'Step 3');
@@ -132,7 +132,7 @@ describe('ProgressTracker (Node + ORT)', () => {
     expect(progress?.message).toBe('All done');
   });
 
-  it('obsługuje progress error handling', () => {
+  it('handles progress error handling', () => {
     tracker.update('error-operation', 50, 'Halfway');
     tracker.error('error-operation', new Error('Something went wrong'));
     
@@ -141,7 +141,7 @@ describe('ProgressTracker (Node + ORT)', () => {
     expect(progress?.message).toContain('Error: Something went wrong');
   });
 
-  it('obsługuje progress cleanup', () => {
+  it('handles progress cleanup', () => {
     tracker.update('cleanup-operation', 50, 'Halfway');
     
     const progress = tracker.getProgress('cleanup-operation');
@@ -154,7 +154,7 @@ describe('ProgressTracker (Node + ORT)', () => {
     expect(clearedProgress).toBeUndefined();
   });
 
-  it('obsługuje progress statistics', () => {
+  it('handles progress statistics', () => {
     tracker.update('operation-1', 50, 'Halfway');
     tracker.update('operation-2', 100, 'Complete');
     

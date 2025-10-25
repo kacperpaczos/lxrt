@@ -17,7 +17,7 @@ describe('BackendSelector (Node + ORT)', () => {
     expect(selector).toBeInstanceOf(BackendSelector);
   });
 
-  it('obsługuje backend detection', () => {
+  it('handles backend detection', () => {
     const backends = selector.detectAvailableBackends();
     
     expect(backends).toBeDefined();
@@ -30,7 +30,7 @@ describe('BackendSelector (Node + ORT)', () => {
     console.log(`✅ Available backends: ${backends.join(', ')}`);
   });
 
-  it('obsługuje backend selection', () => {
+  it('handles backend selection', () => {
     const selectedBackend = selector.selectBackend('cpu');
     
     expect(selectedBackend).toBeDefined();
@@ -40,7 +40,7 @@ describe('BackendSelector (Node + ORT)', () => {
     console.log(`✅ Selected backend: ${selectedBackend.type}`);
   });
 
-  it('obsługuje backend preferences', () => {
+  it('handles backend preferences', () => {
     const preferences = ['gpu', 'cpu', 'wasm'];
     const selectedBackend = selector.selectBackend('cpu', preferences);
     
@@ -51,7 +51,7 @@ describe('BackendSelector (Node + ORT)', () => {
     console.log(`✅ Backend with preferences: ${selectedBackend.type}`);
   });
 
-  it('obsługuje backend fallback', () => {
+  it('handles backend fallback', () => {
     const selectedBackend = selector.selectBackend('gpu'); // Might not be available
     
     expect(selectedBackend).toBeDefined();
@@ -65,7 +65,7 @@ describe('BackendSelector (Node + ORT)', () => {
     console.log(`✅ Backend fallback: ${selectedBackend.type} (available: ${selectedBackend.available})`);
   });
 
-  it('obsługuje backend configuration', () => {
+  it('handles backend configuration', () => {
     const config = selector.getBackendConfig('cpu');
     
     expect(config).toBeDefined();
@@ -75,7 +75,7 @@ describe('BackendSelector (Node + ORT)', () => {
     console.log(`✅ Backend config: ${JSON.stringify(config.settings)}`);
   });
 
-  it('obsługuje backend performance metrics', () => {
+  it('handles backend performance metrics', () => {
     const metrics = selector.getPerformanceMetrics('cpu');
     
     expect(metrics).toBeDefined();
@@ -86,7 +86,7 @@ describe('BackendSelector (Node + ORT)', () => {
     console.log(`✅ Backend performance: ${metrics.performance.score}`);
   });
 
-  it('obsługuje backend comparison', () => {
+  it('handles backend comparison', () => {
     const comparison = selector.compareBackends(['cpu', 'wasm']);
     
     expect(comparison).toBeDefined();
@@ -102,7 +102,7 @@ describe('BackendSelector (Node + ORT)', () => {
     console.log(`✅ Backend comparison: ${comparison.length} backends`);
   });
 
-  it('obsługuje backend optimization', () => {
+  it('handles backend optimization', () => {
     const optimized = selector.optimizeBackend('cpu', {
       modelType: 'llm',
       modelSize: 'large',
@@ -117,7 +117,7 @@ describe('BackendSelector (Node + ORT)', () => {
     console.log(`✅ Optimized backend: ${JSON.stringify(optimized.settings)}`);
   });
 
-  it('obsługuje backend monitoring', () => {
+  it('handles backend monitoring', () => {
     const monitor = selector.startMonitoring('cpu');
     
     expect(monitor).toBeDefined();
@@ -130,16 +130,16 @@ describe('BackendSelector (Node + ORT)', () => {
     
     const stats = monitor.getStats();
     expect(stats).toBeDefined();
-    expect(stats.totalUsage).toBeGreaterThan(0);
-    expect(stats.averageLoad).toBeGreaterThan(0);
-    
+    expect(stats.usage.total).toBeGreaterThan(0);
+    expect(stats.usage.average).toBeGreaterThan(0);
+
     monitor.stop();
     expect(monitor.active).toBe(false);
-    
-    console.log(`✅ Backend monitoring: ${stats.totalUsage}ms usage, ${stats.averageLoad} load`);
+
+    console.log(`✅ Backend monitoring: ${stats.usage.total}ms usage, ${stats.usage.average} load`);
   });
 
-  it('obsługuje backend error handling', () => {
+  it('handles backend error handling', () => {
     const errorBackend = selector.selectBackend('invalid-backend');
     
     expect(errorBackend).toBeDefined();
@@ -150,7 +150,7 @@ describe('BackendSelector (Node + ORT)', () => {
     console.log(`✅ Backend error handling: fallback to ${errorBackend.type}`);
   });
 
-  it('obsługuje backend cleanup', () => {
+  it('handles backend cleanup', () => {
     const monitor = selector.startMonitoring('cpu');
     expect(monitor.active).toBe(true);
     

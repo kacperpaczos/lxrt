@@ -20,7 +20,7 @@ describe('OCR Model (Node + ORT)', () => {
     await provider.dispose();
   });
 
-  it('rozpoznaje tekst z obrazu', async () => {
+  it('recognizes text from image', async () => {
     const imagePath = path.join(__dirname, '../../fixtures/images/test.png');
     const imageBuffer = readFileSync(imagePath);
     const imageBlob = new Blob([imageBuffer], { type: 'image/png' });
@@ -55,7 +55,7 @@ describe('OCR Model (Node + ORT)', () => {
     console.log(`✅ OCR language: ${result.language}`);
   });
 
-  it('obsługuje różne formaty obrazów', async () => {
+  it('handles różne formaty obrazów', async () => {
     const formats = ['test.jpg', 'test.png', 'test.gif'];
     
     for (const filename of formats) {
@@ -73,7 +73,7 @@ describe('OCR Model (Node + ORT)', () => {
     }
   });
 
-  it('obsługuje opcje OCR', async () => {
+  it('handles opcje OCR', async () => {
     const imagePath = path.join(__dirname, '../../fixtures/images/test.png');
     const imageBuffer = readFileSync(imagePath);
     const imageBlob = new Blob([imageBuffer], { type: 'image/png' });
@@ -90,7 +90,7 @@ describe('OCR Model (Node + ORT)', () => {
     console.log(`✅ OCR with options: "${result.text}" (confidence: ${result.confidence})`);
   });
 
-  it('obsługuje obrazy bez tekstu', async () => {
+  it('handles obrazy bez tekstu', async () => {
     // Test with an image that might not have text
     const imagePath = path.join(__dirname, '../../fixtures/images/test.jpg');
     const imageBuffer = readFileSync(imagePath);

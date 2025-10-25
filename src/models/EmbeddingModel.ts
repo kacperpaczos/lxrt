@@ -231,6 +231,7 @@ export class EmbeddingModel extends BaseModel<EmbeddingConfig> {
     } finally {
       this.loading = false;
     }
+    return Promise.resolve();
   }
 
   /**

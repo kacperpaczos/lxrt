@@ -20,7 +20,7 @@ describe('STT Model (Node + ORT)', () => {
     await provider.dispose();
   });
 
-  it('transkrybuje krótki WAV z fixtures', async () => {
+  it('transcribes short WAV from fixtures', async () => {
     const wavPath = path.join(__dirname, '../../fixtures/audio/test.wav');
     const buf = readFileSync(wavPath);
     

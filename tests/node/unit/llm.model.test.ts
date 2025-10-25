@@ -19,7 +19,7 @@ describe('LLM Model (Node + ORT)', () => {
     await provider.dispose();
   });
 
-  it('generuje tekst z promptu', async () => {
+  it('generates text from prompt', async () => {
     const response = await provider.chat('Hello, how are you?');
     
     expect(response).toBeDefined();
@@ -30,7 +30,7 @@ describe('LLM Model (Node + ORT)', () => {
     console.log(`✅ LLM generated: "${response.content}"`);
   });
 
-  it('generuje różne odpowiedzi dla różnych promptów', async () => {
+  it('generates różne odpowiedzi dla różnych promptów', async () => {
     const prompt1 = 'The weather is';
     const prompt2 = 'I love programming because';
     
@@ -45,7 +45,7 @@ describe('LLM Model (Node + ORT)', () => {
     console.log(`✅ Prompt 2: "${response2.content}"`);
   });
 
-  it('respektuje maxTokens limit', async () => {
+  it('respects maxTokens limit', async () => {
     const longPrompt = 'Write a very long story about a dragon';
     const response = await provider.chat(longPrompt);
     
@@ -55,7 +55,7 @@ describe('LLM Model (Node + ORT)', () => {
     console.log(`✅ Limited response: "${response.content}"`);
   });
 
-  it('obsługuje różne style generowania', async () => {
+  it('handles różne style generowania', async () => {
     const creativePrompt = 'Once upon a time, in a magical forest';
     const technicalPrompt = 'The algorithm works by';
     

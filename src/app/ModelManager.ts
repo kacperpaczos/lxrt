@@ -52,19 +52,20 @@ export class ModelManager {
       return existingModel;
     }
 
-    // Check cache
-    const cached = this.cache.get(modality, config);
+    // Auto-scaler: optionally adjust config based on capabilities and performanceMode
+    const scaledConfig = this.autoScaler.autoScale(modality, config);
+
+    // Check cache using scaled config (consistent with what we store)
+    console.log(`[ModelManager] Checking cache for ${modality}:`, scaledConfig);
+    const cached = this.cache.get(modality, scaledConfig);
     if (cached) {
-      const model = this.createModelInstance(modality, config);
+      const model = this.createModelInstance(modality, scaledConfig);
       // Restore from cache
       model.setPipeline(cached.pipeline);
       this.models.set(modality, model);
-      this.configs.set(modality, config);
+      this.configs.set(modality, scaledConfig);
       return model;
     }
-
-    // Auto-scaler: optionally adjust config based on capabilities and performanceMode
-    const scaledConfig = this.autoScaler.autoScale(modality, config);
     if (scaledConfig !== config) {
       const logger = getConfig().logger;
       logger.debug('[transformers-router] autoscale', {
@@ -103,6 +104,11 @@ export class ModelManager {
 
       // Cache the model
       const pipeline = model.getRawPipeline();
+      console.log(`[ModelManager] Caching model ${modality}:`, {
+        modelName: (scaledConfig as ModelConfig).model,
+        hasPipeline: !!pipeline,
+        pipelineType: typeof pipeline,
+      });
       this.cache.set(modality, scaledConfig, pipeline);
 
       // Store in active models
@@ -264,6 +270,13 @@ export class ModelManager {
    */
   getBackendSelector(): BackendSelector {
     return this.backendSelector;
+  }
+
+  /**
+   * Get ModelCache instance (for testing)
+   */
+  getCache(): ModelCache {
+    return this.cache;
   }
 
   /**

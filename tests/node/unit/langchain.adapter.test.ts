@@ -28,7 +28,7 @@ describe('LangChain Adapter (Node + ORT)', () => {
     expect(adapter).toBeInstanceOf(LangChainAdapter);
   });
 
-  it('obsługuje LLM chain', async () => {
+  it('handles LLM chain', async () => {
     const result = await adapter.invoke('What is the capital of France?');
     
     expect(result).toBeDefined();
@@ -38,7 +38,7 @@ describe('LangChain Adapter (Node + ORT)', () => {
     console.log(`✅ LangChain LLM: "${result}"`);
   });
 
-  it('obsługuje embedding chain', async () => {
+  it('handles embedding chain', async () => {
     const result = await adapter.embedQuery('Hello world');
     
     expect(result).toBeDefined();
@@ -49,7 +49,7 @@ describe('LangChain Adapter (Node + ORT)', () => {
     console.log(`✅ LangChain Embedding: ${result.length} dimensions`);
   });
 
-  it('obsługuje batch embeddings', async () => {
+  it('handles batch embeddings', async () => {
     const texts = ['Hello world', 'Goodbye world', 'How are you?'];
     const result = await adapter.embedDocuments(texts);
     
@@ -66,7 +66,7 @@ describe('LangChain Adapter (Node + ORT)', () => {
     });
   });
 
-  it('obsługuje streaming', async () => {
+  it('handles streaming', async () => {
     const result = await adapter.stream('Tell me a short story');
     
     expect(result).toBeDefined();
@@ -86,7 +86,7 @@ describe('LangChain Adapter (Node + ORT)', () => {
     console.log(`✅ LangChain Streaming: "${fullText}"`);
   });
 
-  it('obsługuje różne parametry', async () => {
+  it('handles różne parametry', async () => {
     const result = await adapter.invoke('Count to 3', {
       temperature: 0.7,
       maxTokens: 20,
@@ -99,7 +99,7 @@ describe('LangChain Adapter (Node + ORT)', () => {
     console.log(`✅ LangChain with params: "${result}"`);
   });
 
-  it('obsługuje conversation memory', async () => {
+  it('handles conversation memory', async () => {
     // Test conversation with memory
     const response1 = await adapter.invoke('My name is John');
     const response2 = await adapter.invoke('What is my name?');
@@ -113,7 +113,7 @@ describe('LangChain Adapter (Node + ORT)', () => {
     console.log(`✅ LangChain Memory 2: "${response2}"`);
   });
 
-  it('obsługuje różne typy inputów', async () => {
+  it('handles różne typy inputów', async () => {
     const stringInput = 'Hello world';
     const objectInput = { text: 'Hello world', type: 'greeting' };
     

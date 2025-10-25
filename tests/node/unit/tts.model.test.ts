@@ -38,7 +38,7 @@ describe('TTS Model (Node + ORT)', () => {
     await provider.dispose();
   });
 
-  it('generuje audio z tekstu', async () => {
+  it('generates audio from text', async () => {
     const text = 'Hello, this is a test of text to speech.';
     const speakerEmbeddings = new Float32Array(512).fill(0.5); // Simple default speaker
     
@@ -56,7 +56,7 @@ describe('TTS Model (Node + ORT)', () => {
     console.log(`✅ TTS generated audio: ${audioBlob.size} bytes`);
   });
 
-  it('generuje różne audio dla różnych tekstów', async () => {
+  it('generates różne audio dla różnych tekstów', async () => {
     const text1 = 'This is the first test.';
     const text2 = 'This is the second test with different content.';
     const speakerEmbeddings = new Float32Array(512).fill(0.5);
@@ -80,7 +80,7 @@ describe('TTS Model (Node + ORT)', () => {
     console.log(`✅ Audio 2: ${audio2.size} bytes`);
   });
 
-  it('obsługuje różne speaker embeddings', async () => {
+  it('handles różne speaker embeddings', async () => {
     const text = 'Testing different speaker voices.';
     
     // Different speaker embeddings
@@ -106,7 +106,7 @@ describe('TTS Model (Node + ORT)', () => {
     console.log(`✅ Speaker 2: ${audio2.size} bytes`);
   });
 
-  it('generuje audio dla długich tekstów', async () => {
+  it('generates audio dla długich tekstów', async () => {
     const longText = 'This is a longer text that should test the TTS model with more content. ' +
       'It includes multiple sentences and should produce a longer audio output. ' +
       'The model should handle this gracefully and produce coherent speech.';

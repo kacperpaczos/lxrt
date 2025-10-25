@@ -99,7 +99,7 @@ export class LLMModel extends BaseModel<LLMConfig> {
         isBrowser &&
         typeof (navigator as unknown as { gpu?: unknown }).gpu !== 'undefined';
 
-      // Sprawdź realną dostępność adaptera WebGPU (nie tylko obecność API)
+      // Check actual WebGPU adapter availability (not just API presence)
       let webgpuAdapterAvailable = false;
       if (supportsWebGPU) {
         try {
@@ -268,6 +268,7 @@ export class LLMModel extends BaseModel<LLMConfig> {
         console.log('[LLMModel] load(): finished, loaded=', this.loaded);
       }
     }
+    return Promise.resolve();
   }
 
   /**

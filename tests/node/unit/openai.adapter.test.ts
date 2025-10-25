@@ -28,7 +28,7 @@ describe('OpenAI Adapter (Node + ORT)', () => {
     expect(adapter).toBeInstanceOf(OpenAIAdapter);
   });
 
-  it('obsługuje chat completions', async () => {
+  it('handles chat completions', async () => {
     const response = await adapter.createChatCompletion({
       model: 'gpt-3.5-turbo',
       messages: [
@@ -50,7 +50,7 @@ describe('OpenAI Adapter (Node + ORT)', () => {
     console.log(`✅ OpenAI Chat: "${choice.message.content}"`);
   });
 
-  it('obsługuje text completions', async () => {
+  it('handles text completions', async () => {
     const response = await adapter.createCompletion({
       model: 'text-davinci-003',
       prompt: 'The future of AI is',
@@ -69,7 +69,7 @@ describe('OpenAI Adapter (Node + ORT)', () => {
     console.log(`✅ OpenAI Completion: "${choice.text}"`);
   });
 
-  it('obsługuje embeddings', async () => {
+  it('handles embeddings', async () => {
     const response = await adapter.createEmbedding({
       model: 'text-embedding-ada-002',
       input: 'Hello world',
@@ -88,7 +88,7 @@ describe('OpenAI Adapter (Node + ORT)', () => {
     console.log(`✅ OpenAI Embedding: ${embedding.embedding.length} dimensions`);
   });
 
-  it('obsługuje batch embeddings', async () => {
+  it('handles batch embeddings', async () => {
     const response = await adapter.createEmbedding({
       model: 'text-embedding-ada-002',
       input: ['Hello world', 'Goodbye world'],
@@ -108,7 +108,7 @@ describe('OpenAI Adapter (Node + ORT)', () => {
     });
   });
 
-  it('obsługuje różne parametry modelu', async () => {
+  it('handles different model parameters', async () => {
     const response = await adapter.createChatCompletion({
       model: 'gpt-3.5-turbo',
       messages: [
@@ -131,7 +131,7 @@ describe('OpenAI Adapter (Node + ORT)', () => {
     console.log(`✅ OpenAI with params: "${choice.message.content}"`);
   });
 
-  it('obsługuje streaming responses', async () => {
+  it('handles streaming responses', async () => {
     const response = await adapter.createChatCompletion({
       model: 'gpt-3.5-turbo',
       messages: [

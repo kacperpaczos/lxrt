@@ -18,13 +18,13 @@ describe('Embeddings Model (Node + ORT)', () => {
     await provider.dispose();
   });
 
-  it('generuje embedding dla tekstu', async () => {
+  it('generates embedding dla tekstu', async () => {
     const [vec] = await provider.embed('Hello world');
     expect(Array.isArray(vec)).toBe(true);
     expect((vec as number[]).length).toBeGreaterThan(0);
   });
 
-  it('liczy podobieństwo (cosine) > 0.3 dla podobnych tekstów', async () => {
+  it('calculates similarity (cosine) > 0.3 for similar texts', async () => {
     const a = await provider.similarity('I love programming', 'Coding is fun');
     expect(typeof a).toBe('number');
     expect(a).toBeGreaterThan(0.3);
