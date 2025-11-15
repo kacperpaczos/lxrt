@@ -22,7 +22,7 @@ describe('ModelCache (Node + ORT)', () => {
   });
 
   beforeEach(() => {
-    // Don't clear cache - use the actual ModelManager cache
+    // Don't clear cache - tests will manage their own cache state
   });
 
   it('tworzy cache instance', () => {
@@ -92,15 +92,21 @@ describe('ModelCache (Node + ORT)', () => {
   });
 
   it('handles cache expiration', async () => {
+    // Clear cache and reload model to ensure clean state
+    cache.clear();
     await provider.warmup('llm');
 
+    // Check if model is in cache before setting expiration
+    const isInCache = cache.hasByConfig('llm', { model: 'Xenova/gpt2' });
+    console.log(`Model in cache before expiration: ${isInCache}`);
+    
     // Set expiration time
-    cache.setExpiration('llm', 'Xenova/gpt2', 100); // 100ms
+    cache.setExpiration('llm', 'Xenova/gpt2', 200); // nieco większy margines
 
     expect(cache.hasByConfig('llm', { model: 'Xenova/gpt2' })).toBe(true);
 
-    // Wait for expiration
-    await new Promise(resolve => setTimeout(resolve, 150));
+    // Poczekaj z marginesem na timer oraz lazy-eviction
+    await new Promise(resolve => setTimeout(resolve, 300));
 
     expect(cache.hasByConfig('llm', { model: 'Xenova/gpt2' })).toBe(false);
   });
@@ -116,10 +122,17 @@ describe('ModelCache (Node + ORT)', () => {
   });
 
   it('handles cache hit/miss tracking', async () => {
+    // Clear cache and reload model to ensure clean state
+    cache.clear();
     await provider.warmup('llm');
 
-    // Cache hit
+    // Check if model is in cache
+    const isInCache = cache.hasByConfig('llm', { model: 'Xenova/gpt2' });
+    console.log(`Model in cache: ${isInCache}`);
+    
+    // Cache hit (użyj dokładnie tego samego minimalnego configu)
     const hit1 = cache.get('llm', { model: 'Xenova/gpt2' });
+    console.log(`Cache get result: ${!!hit1}`);
     expect(hit1).toBeDefined();
 
     // Cache miss

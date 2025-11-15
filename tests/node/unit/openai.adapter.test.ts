@@ -70,7 +70,7 @@ describe('OpenAI Adapter (Node + ORT)', () => {
   });
 
   it('handles embeddings', async () => {
-    const response = await adapter.createEmbedding({
+    const response = await adapter.createEmbeddings({
       model: 'text-embedding-ada-002',
       input: 'Hello world',
     });
@@ -89,7 +89,7 @@ describe('OpenAI Adapter (Node + ORT)', () => {
   });
 
   it('handles batch embeddings', async () => {
-    const response = await adapter.createEmbedding({
+    const response = await adapter.createEmbeddings({
       model: 'text-embedding-ada-002',
       input: ['Hello world', 'Goodbye world'],
     });

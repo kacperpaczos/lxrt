@@ -2,10 +2,7 @@ import { createAIProvider, init } from '../../../src/index';
 import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
 import * as path from 'node:path';
 
-// LLM and TTS tests are enabled by default (reasonable sizes for testing)
-// Both produce audio recordings with timestamps for validation
-const RUN_LLM_TESTS = process.env.RUN_LLM !== '0'; // Default: true
-const RUN_TTS_TESTS = process.env.RUN_TTS !== '0'; // Default: true
+// LLM and TTS tests always enabled for full coverage
 
 /**
  * Save audio blob to file with timestamp
@@ -61,7 +58,7 @@ describe('Integration: Multimodal flow (Node + ORT)', () => {
     }, 180000);
   });
 
-  (RUN_LLM_TESTS ? describe : describe.skip)('LLM integration', () => {
+  describe('LLM integration', () => {
     const provider = createAIProvider({
       stt: { model: 'Xenova/whisper-tiny', dtype: 'fp32', device: 'cpu' },
       llm: { model: 'Xenova/gpt2', dtype: 'fp32', device: 'cpu', maxTokens: 50 },
@@ -104,7 +101,7 @@ describe('Integration: Multimodal flow (Node + ORT)', () => {
         }, 300000);
   });
 
-  (RUN_TTS_TESTS ? describe : describe.skip)('Full multimodal chain', () => {
+  describe('Full multimodal chain', () => {
     const provider = createAIProvider({
       stt: { model: 'Xenova/whisper-tiny', dtype: 'fp32', device: 'cpu' },
       llm: { model: 'Xenova/gpt2', dtype: 'fp32', device: 'cpu', maxTokens: 30 },

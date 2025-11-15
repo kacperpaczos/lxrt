@@ -5,7 +5,7 @@ import * as path from 'node:path';
 describe('OCR Model (Node + ORT)', () => {
   const provider = createAIProvider({
     ocr: {
-      model: 'Xenova/tr-ocr',
+      model: 'Xenova/trocr-small-printed',
       dtype: 'fp32',
       device: 'cpu',
     },
