@@ -33,6 +33,7 @@ export interface ModelCacheOptions {
   maxSize?: number;
   maxAge?: number;
   cleanupInterval?: number;
+  skipCache?: boolean; // Nowa opcja do pomijania cache
 }
 
 /**
@@ -54,15 +55,24 @@ export class ModelCache extends EventEmitter {
       maxSize: options.maxSize || 10,
       maxAge: options.maxAge || 3600000, // 1 hour
       cleanupInterval: options.cleanupInterval || 300000, // 5 minutes
+      skipCache: options.skipCache || false, // Domyślnie nie pomijaj cache
     };
 
-    this.startCleanupTimer();
+    // Jeśli skipCache jest true, nie startuj timerów
+    if (!this.options.skipCache) {
+      this.startCleanupTimer();
+    }
   }
 
   /**
    * Check if a model is cached
    */
   has(type: string, modelName: string): boolean {
+    // Jeśli skipCache jest włączony, zawsze zwróć false
+    if (this.options.skipCache) {
+      return false;
+    }
+
     const key = this.getKey(type, modelName);
     const entry = this.cache.get(key);
 
@@ -88,6 +98,11 @@ export class ModelCache extends EventEmitter {
    * Get a cached model (ModelManager interface)
    */
   get(type: string, config: any): any | undefined {
+    // Jeśli skipCache jest włączony, zawsze zwróć undefined
+    if (this.options.skipCache) {
+      return undefined;
+    }
+
     const modelName = config.model;
     if (typeof console !== 'undefined' && console.log) {
       console.log(`[ModelCache] get(${type}, ${JSON.stringify(config)})`);
@@ -136,6 +151,11 @@ export class ModelCache extends EventEmitter {
    * Check if a model is cached (test interface)
    */
   hasByConfig(type: string, configOrModelName: string | any): boolean {
+    // Jeśli skipCache jest włączony, zawsze zwróć false
+    if (this.options.skipCache) {
+      return false;
+    }
+
     if (typeof configOrModelName === 'string') {
       return this.hasByName(type, configOrModelName);
     } else {
@@ -187,6 +207,11 @@ export class ModelCache extends EventEmitter {
    * Set a model in cache (ModelManager interface)
    */
   set(type: string, config: any, pipeline: any, size: number = 0): void {
+    // Jeśli skipCache jest włączony, nie cacheuj
+    if (this.options.skipCache) {
+      return;
+    }
+
     const modelName = config.model;
     if (typeof console !== 'undefined' && console.log) {
       console.log(
@@ -259,6 +284,14 @@ export class ModelCache extends EventEmitter {
 
     if (entry) {
       entry.expiresAt = new Date(Date.now() + maxAge);
+      // Zaplanuj usunięcie po wygaśnięciu (nie blokuj procesu)
+      const timer = setTimeout(
+        () => {
+          this.invalidate(type, modelName);
+        },
+        Math.max(0, maxAge)
+      );
+      (timer as any).unref?.();
     }
   }
 
@@ -385,6 +418,7 @@ export class ModelCache extends EventEmitter {
       this.cleanupTimer = setInterval(() => {
         this.cleanup();
       }, this.options.cleanupInterval);
+      (this.cleanupTimer as any).unref?.();
     }
   }
 

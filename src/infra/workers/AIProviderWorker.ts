@@ -30,7 +30,7 @@ export class AIProviderWorker {
   /**
    * Initialize worker pool
    */
-  private async ensureWorkerPool(): Promise<WorkerPool> {
+  private async ensureWorkerPool(): Promise<WorkerPool | null> {
     if (!this.workerPool) {
       // Create worker pool with LLM worker
       // Note: In production, this would need proper worker URL resolution
@@ -66,6 +66,9 @@ export class AIProviderWorker {
     }
 
     const pool = await this.ensureWorkerPool();
+    if (!pool) {
+      throw new Error('WorkerPool not available in this environment');
+    }
 
     try {
       await pool.execute('load', {
@@ -104,6 +107,9 @@ export class AIProviderWorker {
     await this.loadModel();
 
     const pool = await this.ensureWorkerPool();
+    if (!pool) {
+      throw new Error('WorkerPool not available in this environment');
+    }
 
     try {
       const result = await pool.execute<{
@@ -145,6 +151,9 @@ export class AIProviderWorker {
     await this.loadModel();
 
     const pool = await this.ensureWorkerPool();
+    if (!pool) {
+      throw new Error('WorkerPool not available in this environment');
+    }
 
     try {
       const result = await pool.execute<{ text: string }>('complete', {
