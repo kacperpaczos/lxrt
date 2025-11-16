@@ -107,9 +107,6 @@ export { audioConverter, AudioConverter } from './utils/AudioConverter';
 // Progress tracking
 export { ProgressTracker } from './utils/ProgressTracker';
 
-// Legacy router (for backward compatibility)
-export { TransformersRouter, Route, RouterOptions } from './app/router';
-
 // Logger interface
 export type { Logger } from './domain/logging/Logger';
 export type { InitOptions, RuntimeConfig } from './domain/config/Config';
@@ -158,3 +155,8 @@ export type {
   UseVectorizationOptions,
   UseVectorizationReturn,
 } from './ui/react';
+
+export type {
+  UseVectorizationOptions as UseVectorizationOptionsVue,
+  UseVectorizationReturn as UseVectorizationReturnVue,
+} from './ui/vue';
