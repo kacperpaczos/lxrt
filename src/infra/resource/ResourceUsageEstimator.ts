@@ -66,6 +66,11 @@ export interface ResourceUsageEstimator {
   emit(event: string, data: unknown): void;
 
   /**
+   * Emit resource usage snapshot
+   */
+  emitResourceUsage(usage: ResourceUsageSnapshot): void;
+
+  /**
    * Close and cleanup
    */
   close(): Promise<void>;
