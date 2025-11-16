@@ -53,6 +53,7 @@ export interface TTSConfig {
   speaker?: string | Float32Array;
   sampleRate?: number;
   voiceProfile?: string; // voice profile ID
+  skip?: boolean; // Opcja do pomijania TTS
 }
 
 // STT Configuration
@@ -179,6 +180,8 @@ export interface OCRResult {
   }>;
   usedLanguage?: string; // language actually used for final recognition
   detectedLanguages?: Array<{ lang: string; score: number }>; // language ranking ISO-639-3
+  language?: string; // backwards compatibility field
+  regions?: Array<Record<string, unknown>>; // placeholder for region info
 }
 
 // Chat Message
