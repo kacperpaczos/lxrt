@@ -10,8 +10,8 @@ import type {
   ResourceUsageSnapshot,
   VectorizeOptions,
   QueryVectorizeOptions,
-  ProgressEventData,
   VectorizationProgressEventData,
+  VectorizationStage,
   ChunkingOptions,
 } from '../../core/types';
 import { LocalVectorStoreIndexedDB } from '../../infra/vectorstore/LocalVectorStoreIndexedDB';
@@ -105,9 +105,12 @@ export class VectorizationService {
     const jobId = this.progressTracker.createJob(input, options, stageWeights);
 
     // Setup progress forwarding
-    const unsubscribe = this.progressTracker.on('stage:progress', event => {
-      this.emit('vectorization:progress', event);
-    });
+    const unsubscribe = this.progressTracker.subscribe(
+      'stage:progress',
+      event => {
+        this.emit('vectorization:progress', event);
+      }
+    );
 
     try {
       // Check signal for cancellation
@@ -246,9 +249,12 @@ export class VectorizationService {
       finalizing: 2,
     });
 
-    const unsubscribe = this.progressTracker.on('stage:progress', event => {
-      this.emit('vectorization:progress', event);
-    });
+    const unsubscribe = this.progressTracker.subscribe(
+      'stage:progress',
+      event => {
+        this.emit('vectorization:progress', event);
+      }
+    );
 
     try {
       // Stage 1: Initializing
@@ -530,13 +536,15 @@ export class VectorizationService {
     if (!this.eventListeners.has(event)) {
       this.eventListeners.set(event, new Set());
     }
-    this.eventListeners.get(event)!.add(handler);
+    this.eventListeners
+      .get(event)!
+      .add(handler as unknown as (data: unknown) => void);
 
     // Return unsubscribe function
     return () => {
       const listeners = this.eventListeners.get(event);
       if (listeners) {
-        listeners.delete(handler);
+        listeners.delete(handler as unknown as (data: unknown) => void);
         if (listeners.size === 0) {
           this.eventListeners.delete(event);
         }
@@ -613,36 +621,10 @@ export class VectorizationService {
   // Helper methods for progress tracking
   private getProgressEvent(
     jobId: string,
-    _stage: string,
-    _stageProgress: number
-  ): ProgressEventData {
-    const job = this.progressTracker.getJobStatus(jobId);
-    if (!job) {
-      throw new Error(`Job ${jobId} not found`);
-    }
-
-    const inputMeta = this.progressTracker.getInputMeta(job.input);
-    const globalProgress = this.progressTracker.calculateGlobalProgress(job);
-
-    return {
-      modality: 'embedding',
-      model: inputMeta.mime,
-      file:
-        job.input instanceof File
-          ? job.input.name
-          : typeof job.input === 'string'
-            ? job.input
-            : 'buffer',
-      progress: globalProgress,
-      loaded: Math.floor(globalProgress * 100),
-      total: 100,
-      status:
-        job.status === 'completed'
-          ? 'ready'
-          : job.status === 'error'
-            ? 'error'
-            : 'loading',
-    };
+    stage: VectorizationStage,
+    stageProgress: number
+  ): VectorizationProgressEventData {
+    return this.progressTracker.getStageEvent(jobId, stage, stageProgress);
   }
 
   private detectModalityFromInput(
