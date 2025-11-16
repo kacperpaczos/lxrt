@@ -25,6 +25,10 @@ import { ModelUnavailableError } from '@domain/errors';
 import { AutoScaler } from './autoscaler/AutoScaler';
 import { BackendSelector } from './backend/BackendSelector';
 
+export interface ModelManagerOptions {
+  skipCache?: boolean;
+}
+
 export class ModelManager {
   private cache: ModelCache;
   private models: Map<Modality, BaseModel>;
@@ -33,8 +37,8 @@ export class ModelManager {
   private autoScaler: AutoScaler;
   private backendSelector: BackendSelector;
 
-  constructor(eventEmitter: EventEmitter) {
-    this.cache = new ModelCache();
+  constructor(eventEmitter: EventEmitter, options?: ModelManagerOptions) {
+    this.cache = new ModelCache({ skipCache: options?.skipCache });
     this.models = new Map();
     this.configs = new Map();
     this.eventEmitter = eventEmitter;
@@ -49,7 +53,25 @@ export class ModelManager {
     // Check if model is already loaded with the same config
     const existingModel = this.models.get(modality);
     if (existingModel && this.isSameConfig(modality, config)) {
+      // Ensure cache is populated even if model remained loaded while cache was cleared
+      const cached = this.cache.get(modality, config);
+      if (!cached) {
+        const pipeline = existingModel.getRawPipeline();
+        this.cache.set(modality, config, pipeline);
+      }
       return existingModel;
+    }
+
+    // Sprawdź, czy TTS ma ustawioną flagę skip - zwróć dummy model
+    if (modality === 'tts' && (config as any).skip) {
+      // Utwórz dummy model, który będzie ignorował wszystkie wywołania
+      const dummyModel = new TTSModel(
+        config as TTSConfig,
+        this.backendSelector
+      );
+      this.models.set(modality, dummyModel);
+      this.configs.set(modality, config);
+      return dummyModel;
     }
 
     // Auto-scaler: optionally adjust config based on capabilities and performanceMode
@@ -215,6 +237,17 @@ export class ModelManager {
     const modalities = Array.from(this.models.keys());
     await Promise.all(modalities.map(modality => this.unloadModel(modality)));
     this.cache.clear();
+  }
+
+  /**
+   * Dispose and release all resources (for tests and shutdown)
+   */
+  async dispose(): Promise<void> {
+    try {
+      await this.clearAll();
+    } finally {
+      this.cache.dispose();
+    }
   }
 
   /**

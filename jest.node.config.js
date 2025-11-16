@@ -19,7 +19,6 @@ module.exports = {
   transform: {
     '^.+\\.ts$': ['ts-jest', {
       useESM: false,
-      isolatedModules: true,
       skipLibCheck: true,
       noEmit: true,
       allowJs: true,
@@ -35,11 +34,8 @@ module.exports = {
   transformIgnorePatterns: [
     'node_modules/(?!(.*\\.mjs$|onnxruntime-node|@xenova))'
   ],
-  globals: {
-    'ts-jest': {
-      isolatedModules: true
-    }
-  }
+  // Stabilizacja wyjścia procesów testowych
+  forceExit: true
 };
 
 

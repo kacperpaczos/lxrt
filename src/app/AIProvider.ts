@@ -36,16 +36,30 @@ import type {
   VectorizationProgressEventData,
 } from '../core/types';
 
+export interface AIProviderOptions {
+  skipCache?: boolean;
+  skipTTS?: boolean;
+}
+
 export class AIProvider {
   private modelManager: ModelManager;
   private config: AIProviderConfig;
   private eventEmitter: EventEmitter;
   private vectorizationService?: VectorizationService;
+  private skipTTS: boolean;
 
-  constructor(config: AIProviderConfig = {}) {
+  constructor(config: AIProviderConfig = {}, options?: AIProviderOptions) {
     this.config = config;
     this.eventEmitter = new EventEmitter();
-    this.modelManager = new ModelManager(this.eventEmitter);
+    this.modelManager = new ModelManager(this.eventEmitter, {
+      skipCache: options?.skipCache,
+    });
+    this.skipTTS = options?.skipTTS ?? false;
+
+    // Jeśli skipTTS jest włączony, dodaj flagę do konfiguracji TTS
+    if (this.skipTTS && this.config.tts) {
+      (this.config.tts as { skip?: boolean }).skip = true;
+    }
   }
 
   // ==================== LLM Methods ====================
@@ -475,7 +489,7 @@ export class AIProvider {
     if (this.vectorizationService) {
       await this.vectorizationService.close();
     }
-    await this.modelManager.clearAll();
+    await this.modelManager.dispose();
     this.eventEmitter.removeAllListeners();
   }
 }
