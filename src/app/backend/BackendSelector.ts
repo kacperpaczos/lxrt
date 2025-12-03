@@ -1,8 +1,8 @@
 /**
- * Backend Selector - wybór i konfiguracja backendu dla modeli AI
+ * Backend Selector - backend selection and configuration for AI models
  *
- * Zawiera logikę wykrywania środowiska, określania kolejności fallbacku
- * oraz konfiguracji ONNX backendu (SIMD, threads, backendHint).
+ * Contains environment detection logic, fallback order determination,
+ * and ONNX backend configuration (SIMD, threads, backendHint).
  */
 
 import type { Device } from '../../core/types';
@@ -31,7 +31,7 @@ export class BackendSelector {
   private environmentInfo: EnvironmentInfo | null = null;
 
   /**
-   * Wykrywa środowisko i capabilities systemu
+   * Detects environment and system capabilities
    */
   detectEnvironment(): EnvironmentInfo {
     if (this.environmentInfo) {
@@ -43,10 +43,10 @@ export class BackendSelector {
     let cores = 2;
 
     if (isBrowser) {
-      // Sprawdź WebGPU support
+      // Check WebGPU support
       hasWebGPU = 'gpu' in navigator;
 
-      // Pobierz liczbę rdzeni CPU
+      // Get CPU core count
       cores = navigator.hardwareConcurrency || 2;
     }
 
@@ -60,23 +60,23 @@ export class BackendSelector {
   }
 
   /**
-   * Określa kolejność próbowania backendów na podstawie środowiska i żądanego urządzenia
+   * Determines backend fallback order based on environment and desired device
    */
   getDeviceFallbackOrder(desiredDevice: Device | 'wasm'): string[] {
     const env = this.detectEnvironment();
 
     if (env.isBrowser) {
-      // W przeglądarce: preferuj WebGPU, fallback do WASM, nigdy CPU
+      // In browser: prefer WebGPU, fallback to WASM, never CPU
       if (desiredDevice === 'webgpu') {
         return env.hasWebGPU ? ['webgpu', 'wasm'] : ['wasm'];
       }
       if (desiredDevice === 'wasm') {
         return ['wasm'];
       }
-      // Jeśli ktoś podał 'cpu' w przeglądarce, wymuś WASM
+      // If someone specified 'cpu' in browser, force WASM
       return ['wasm'];
     } else {
-      // Node.js: pozwól na fallback do CPU
+      // Node.js: allow fallback to CPU
       if (desiredDevice === 'webgpu') {
         return ['webgpu', 'cpu'];
       }
@@ -86,13 +86,13 @@ export class BackendSelector {
       if (desiredDevice === 'cpu') {
         return ['cpu'];
       }
-      // Dla innych wartości, dodaj fallback do CPU
+      // For other values, add fallback to CPU
       return [desiredDevice, 'cpu'];
     }
   }
 
   /**
-   * Konfiguruje ONNX backend dla danego urządzenia
+   * Configures ONNX backend for given device
    */
   configureONNXBackend(device: string, env: TransformersEnv): void {
     if (!env?.backends?.onnx) {
@@ -103,7 +103,7 @@ export class BackendSelector {
     const environmentInfo = this.detectEnvironment();
 
     if (device === 'wasm') {
-      // Konfiguracja WASM backendu
+      // WASM backend configuration
       if ('backendHint' in onnxBackends) {
         onnxBackends.backendHint = 'wasm';
       }
@@ -116,7 +116,7 @@ export class BackendSelector {
         );
       }
     } else if (device === 'webgpu') {
-      // Konfiguracja WebGPU backendu
+      // WebGPU backend configuration
       if ('backendHint' in onnxBackends) {
         onnxBackends.backendHint = 'webgpu';
       }
@@ -124,15 +124,15 @@ export class BackendSelector {
   }
 
   /**
-   * Konwertuje urządzenie dla pipeline API
-   * 'wasm' → 'cpu' (pipeline API nie rozpoznaje 'wasm')
+   * Converts device for pipeline API
+   * 'wasm' → 'cpu' (pipeline API doesn't recognize 'wasm')
    */
   getPipelineDevice(device: string): Device {
     return device === 'wasm' ? 'cpu' : (device as Device);
   }
 
   /**
-   * Resetuje cache informacji o środowisku (głównie do testów)
+   * Resets environment info cache (mainly for tests)
    */
   resetEnvironmentCache(): void {
     this.environmentInfo = null;

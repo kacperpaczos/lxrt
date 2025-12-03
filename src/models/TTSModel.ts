@@ -40,6 +40,16 @@ export class TTSModel extends BaseModel<TTSConfig> {
       total?: number;
     }) => void
   ): Promise<void> {
+    // Jeśli TTS jest skipowany, ustaw jako załadowany i zakończ
+    if (this.config.skip) {
+      this.loaded = true;
+      this.loading = false;
+      if (typeof console !== 'undefined' && console.log) {
+        console.log('[TTSModel] load(): skipped - TTS is disabled');
+      }
+      return;
+    }
+
     if (this.loaded) {
       if (typeof console !== 'undefined' && console.log) {
         console.log('[TTSModel] load(): early-return, already loaded');
@@ -226,12 +236,25 @@ export class TTSModel extends BaseModel<TTSConfig> {
     } finally {
       this.loading = false;
     }
+    return Promise.resolve();
   }
 
   /**
    * Synthesize speech from text
    */
   async synthesize(text: string, options: TTSOptions = {}): Promise<Blob> {
+    // Jeśli TTS jest skipowany, zwróć pusty audio blob
+    if (this.config.skip) {
+      if (typeof console !== 'undefined' && console.log) {
+        console.log('[TTSModel] synthesize(): skipped - TTS is disabled');
+      }
+      // Zwróć pusty WAV blob (silencium)
+      return audioConverter.toWavBlob(new Float32Array(0), 22050, {
+        channels: 1,
+        bitDepth: 16,
+      });
+    }
+
     await this.ensureLoaded();
 
     const pipeline = this.getPipeline() as (
@@ -243,8 +266,8 @@ export class TTSModel extends BaseModel<TTSConfig> {
     }>;
 
     try {
-      // Domyślne speaker embeddings dla SpeechT5, jeśli nie podano
-      // (zgodnie z testami integracyjnymi: wektor 512 x 0.5)
+      // Default speaker embeddings for SpeechT5 if not provided
+      // (based on integration tests: 512 vector filled with 0.5)
       const defaultSpeaker = new Float32Array(512).fill(0.5);
       let speakerEmbeddings: Float32Array = defaultSpeaker;
       let voiceParams: Record<string, unknown> = {};

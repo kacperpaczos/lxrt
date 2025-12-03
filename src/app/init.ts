@@ -9,6 +9,20 @@ export async function init(options: InitOptions = {}): Promise<void> {
   const config: RuntimeConfig = { debug: !!options.debug, logger };
   setConfig(config);
 
+  // Initialize ONNX Runtime for Node.js
+  if (typeof window === 'undefined') {
+    // Node.js environment - import onnxruntime-node
+    try {
+      await import('onnxruntime-node');
+      // Configure ONNX Runtime
+      config.logger.debug('ONNX Runtime Node initialized');
+    } catch {
+      config.logger.warn(
+        'ONNX Runtime Node not available, falling back to WASM'
+      );
+    }
+  }
+
   // Initialize model registry
   if (options.models && Array.isArray(options.models)) {
     for (const modelName of options.models) {

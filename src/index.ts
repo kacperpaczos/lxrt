@@ -33,14 +33,6 @@ export { ModelCache } from './app/cache/ModelCache';
 
 // Vectorization service
 export { VectorizationService } from './app/vectorization/VectorizationService';
-export type {
-  VectorizationResult,
-  QueryResult,
-  VectorizeOptions,
-  QueryVectorizeOptions,
-  ProgressEventData,
-  ChunkingOptions,
-} from './core/types';
 
 // Backend and AutoScaling
 export { BackendSelector } from './app/backend/BackendSelector';
@@ -114,19 +106,6 @@ export { audioConverter, AudioConverter } from './utils/AudioConverter';
 
 // Progress tracking
 export { ProgressTracker } from './utils/ProgressTracker';
-export type {
-  JobMetadata,
-  StageProgress,
-  JobStatus,
-  VectorizationStage,
-  VectorizationProgressEventData,
-  VectorizeOptions,
-  QueryVectorizeOptions,
-  ChunkingOptions,
-} from './core/types';
-
-// Legacy router (for backward compatibility)
-export { TransformersRouter, Route, RouterOptions } from './app/router';
 
 // Logger interface
 export type { Logger } from './domain/logging/Logger';
@@ -176,3 +155,8 @@ export type {
   UseVectorizationOptions,
   UseVectorizationReturn,
 } from './ui/react';
+
+export type {
+  UseVectorizationOptions as UseVectorizationOptionsVue,
+  UseVectorizationReturn as UseVectorizationReturnVue,
+} from './ui/vue';

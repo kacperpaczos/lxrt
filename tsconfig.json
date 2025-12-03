@@ -15,6 +15,7 @@
     "sourceMap": true,
     "resolveJsonModule": true,
     "allowSyntheticDefaultImports": true,
+    "isolatedModules": true,
     "baseUrl": "./src",
     "paths": {
       "@domain/*": ["domain/*"],

@@ -1,96 +1,306 @@
 /**
- * Model Cache for managing loaded Transformers.js models
+ * ModelCache - Manages caching of loaded AI models
+ * Follows Single Responsibility Principle
+ *
+ * This utility provides a centralized way to cache loaded models,
+ * ensuring efficient memory usage and fast model retrieval.
+ *
+ * @author transformers-router
+ * @version 1.0.0
  */
 
-import type { Modality, CachedModel, ModelConfig } from '../../core/types';
+import { EventEmitter } from 'events';
 
-export interface ModelCacheOptions {
-  maxSize?: number; // Maximum number of cached models
-  ttl?: number; // Time to live in milliseconds (0 = no expiration)
+export interface ModelCacheEntry {
+  model: any;
+  loadedAt: Date;
+  lastAccessed: Date;
+  accessCount: number;
+  size: number;
+  expiresAt?: Date;
 }
 
-export class ModelCache {
-  private cache: Map<string, CachedModel>;
-  private options: Required<ModelCacheOptions>;
+export interface ModelCacheStats {
+  totalModels: number;
+  totalSize: number;
+  hits: number;
+  misses: number;
+  modelsByType: Record<string, number>;
+  averageAccessTime: number;
+}
+
+export interface ModelCacheOptions {
+  maxSize?: number;
+  maxAge?: number;
+  cleanupInterval?: number;
+  skipCache?: boolean; // Nowa opcja do pomijania cache
+}
+
+/**
+ * ModelCache - Caches loaded AI models for efficient reuse
+ */
+export class ModelCache extends EventEmitter {
+  private cache = new Map<string, ModelCacheEntry>();
+  private stats = {
+    hits: 0,
+    misses: 0,
+    totalAccessTime: 0,
+  };
+  private options: ModelCacheOptions;
+  private cleanupTimer?: ReturnType<typeof setInterval>;
 
   constructor(options: ModelCacheOptions = {}) {
-    this.cache = new Map();
+    super();
     this.options = {
-      maxSize: options.maxSize ?? 5,
-      ttl: options.ttl ?? 0, // No expiration by default
+      maxSize: options.maxSize || 10,
+      maxAge: options.maxAge || 3600000, // 1 hour
+      cleanupInterval: options.cleanupInterval || 300000, // 5 minutes
+      skipCache: options.skipCache || false, // Domyślnie nie pomijaj cache
     };
+
+    // Jeśli skipCache jest true, nie startuj timerów
+    if (!this.options.skipCache) {
+      this.startCleanupTimer();
+    }
   }
 
   /**
-   * Generate cache key from modality and config
+   * Check if a model is cached
    */
-  private getCacheKey(modality: Modality, config: ModelConfig): string {
-    const modelId = (config as { model: string }).model;
-    return `${modality}:${modelId}`;
-  }
-
-  /**
-   * Set a model in the cache
-   */
-  set(modality: Modality, config: ModelConfig, pipeline: unknown): void {
-    const key = this.getCacheKey(modality, config);
-    const now = Date.now();
-
-    // Check if we need to evict old entries
-    if (this.cache.size >= this.options.maxSize && !this.cache.has(key)) {
-      this.evictOldest();
+  has(type: string, modelName: string): boolean {
+    // Jeśli skipCache jest włączony, zawsze zwróć false
+    if (this.options.skipCache) {
+      return false;
     }
 
-    const cachedModel: CachedModel = {
-      modality,
-      pipeline,
-      config,
-      loadedAt: now,
-      lastUsedAt: now,
-    };
+    const key = this.getKey(type, modelName);
+    const entry = this.cache.get(key);
 
-    this.cache.set(key, cachedModel);
+    if (!entry) {
+      this.stats.misses++;
+      return false;
+    }
+
+    // Check if expired
+    if (entry.expiresAt && entry.expiresAt < new Date()) {
+      this.cache.delete(key);
+      this.stats.misses++;
+      return false;
+    }
+
+    this.stats.hits++;
+    entry.lastAccessed = new Date();
+    entry.accessCount++;
+    return true;
   }
 
   /**
-   * Get a model from the cache
+   * Get a cached model (ModelManager interface)
    */
-  get(modality: Modality, config: ModelConfig): CachedModel | undefined {
-    const key = this.getCacheKey(modality, config);
-    const cachedModel = this.cache.get(key);
-
-    if (!cachedModel) {
+  get(type: string, config: any): any | undefined {
+    // Jeśli skipCache jest włączony, zawsze zwróć undefined
+    if (this.options.skipCache) {
       return undefined;
     }
 
-    // Check TTL
-    if (this.options.ttl > 0) {
-      const age = Date.now() - cachedModel.loadedAt;
-      if (age > this.options.ttl) {
-        this.cache.delete(key);
-        return undefined;
+    const modelName = config.model;
+    if (typeof console !== 'undefined' && console.log) {
+      console.log(`[ModelCache] get(${type}, ${JSON.stringify(config)})`);
+    }
+    const result = this.getByName(type, modelName);
+    if (typeof console !== 'undefined' && console.log) {
+      console.log(`[ModelCache] get result:`, !!result);
+    }
+    return result;
+  }
+
+  /**
+   * Get a cached model by name (internal method)
+   */
+  private getByName(type: string, modelName: string): any | undefined {
+    const key = this.getKey(type, modelName);
+    if (typeof console !== 'undefined' && console.log) {
+      console.log(
+        `[ModelCache] getByName key: ${key}, cache size: ${this.cache.size}`
+      );
+    }
+    const entry = this.cache.get(key);
+
+    if (!entry) {
+      this.stats.misses++;
+      if (typeof console !== 'undefined' && console.log) {
+        console.log(`[ModelCache] getByName miss: ${key}`);
       }
+      return undefined;
     }
 
-    // Update last used time
-    cachedModel.lastUsedAt = Date.now();
+    // Check if expired
+    if (entry.expiresAt && entry.expiresAt < new Date()) {
+      this.cache.delete(key);
+      this.stats.misses++;
+      return undefined;
+    }
 
-    return cachedModel;
+    this.stats.hits++;
+    entry.lastAccessed = new Date();
+    entry.accessCount++;
+    return entry.model;
   }
 
   /**
-   * Check if a model is in the cache
+   * Check if a model is cached (test interface)
    */
-  has(modality: Modality, config: ModelConfig): boolean {
-    return this.get(modality, config) !== undefined;
+  hasByConfig(type: string, configOrModelName: string | any): boolean {
+    // Jeśli skipCache jest włączony, zawsze zwróć false
+    if (this.options.skipCache) {
+      return false;
+    }
+
+    if (typeof configOrModelName === 'string') {
+      return this.hasByName(type, configOrModelName);
+    } else {
+      const modelName = configOrModelName.model;
+      return this.hasByName(type, modelName);
+    }
   }
 
   /**
-   * Delete a model from the cache
+   * Check if a model is cached by name
    */
-  delete(modality: Modality, config: ModelConfig): boolean {
-    const key = this.getCacheKey(modality, config);
-    return this.cache.delete(key);
+  hasByName(type: string, modelName: string): boolean {
+    const key = this.getKey(type, modelName);
+    if (typeof console !== 'undefined' && console.log) {
+      console.log(
+        `[ModelCache] hasByName key: ${key}, cache size: ${this.cache.size}`
+      );
+    }
+    const entry = this.cache.get(key);
+
+    if (!entry) {
+      this.stats.misses++;
+      if (typeof console !== 'undefined' && console.log) {
+        console.log(`[ModelCache] hasByName miss: ${key}`);
+      }
+      return false;
+    }
+
+    // Check if expired
+    if (entry.expiresAt && entry.expiresAt < new Date()) {
+      this.cache.delete(key);
+      this.stats.misses++;
+      if (typeof console !== 'undefined' && console.log) {
+        console.log(`[ModelCache] hasByName expired: ${key}`);
+      }
+      return false;
+    }
+
+    this.stats.hits++;
+    entry.lastAccessed = new Date();
+    entry.accessCount++;
+    if (typeof console !== 'undefined' && console.log) {
+      console.log(`[ModelCache] hasByName hit: ${key}`);
+    }
+    return true;
+  }
+
+  /**
+   * Set a model in cache (ModelManager interface)
+   */
+  set(type: string, config: any, pipeline: any, size: number = 0): void {
+    // Jeśli skipCache jest włączony, nie cacheuj
+    if (this.options.skipCache) {
+      return;
+    }
+
+    const modelName = config.model;
+    if (typeof console !== 'undefined' && console.log) {
+      console.log(
+        `[ModelCache] set(${type}, ${JSON.stringify(config)}, pipeline: ${!!pipeline})`
+      );
+    }
+    this.setByName(type, modelName, pipeline, size);
+  }
+
+  /**
+   * Set a model in cache by name
+   */
+  setByName(
+    type: string,
+    modelName: string,
+    model: any,
+    size: number = 0
+  ): void {
+    const key = this.getKey(type, modelName);
+    const now = new Date();
+
+    const entry: ModelCacheEntry = {
+      model,
+      loadedAt: now,
+      lastAccessed: now,
+      accessCount: 0,
+      size,
+      expiresAt: this.options.maxAge
+        ? new Date(now.getTime() + this.options.maxAge)
+        : undefined,
+    };
+
+    if (typeof console !== 'undefined' && console.log) {
+      console.log(
+        `[ModelCache] setByName key: ${key}, before cache size: ${this.cache.size}`
+      );
+    }
+    this.cache.set(key, entry);
+    if (typeof console !== 'undefined' && console.log) {
+      console.log(
+        `[ModelCache] setByName after cache size: ${this.cache.size}`
+      );
+    }
+    this.emit('modelCached', { type, modelName, size });
+
+    // Check if we need to evict old models
+    this.evictIfNeeded();
+  }
+
+  /**
+   * Invalidate a cached model
+   */
+  invalidate(type: string, modelName: string): boolean {
+    const key = this.getKey(type, modelName);
+    const deleted = this.cache.delete(key);
+
+    if (deleted) {
+      this.emit('modelInvalidated', { type, modelName });
+    }
+
+    return deleted;
+  }
+
+  /**
+   * Set expiration time for a model
+   */
+  setExpiration(type: string, modelName: string, maxAge: number): void {
+    const key = this.getKey(type, modelName);
+    const entry = this.cache.get(key);
+
+    if (entry) {
+      entry.expiresAt = new Date(Date.now() + maxAge);
+      // Zaplanuj usunięcie po wygaśnięciu (nie blokuj procesu)
+      const timer = setTimeout(
+        () => {
+          this.invalidate(type, modelName);
+        },
+        Math.max(0, maxAge)
+      );
+      (timer as any).unref?.();
+    }
+  }
+
+  /**
+   * Set maximum cache size
+   */
+  setMaxSize(maxSize: number): void {
+    this.options.maxSize = maxSize;
+    this.evictIfNeeded();
   }
 
   /**
@@ -98,68 +308,139 @@ export class ModelCache {
    */
   clear(): void {
     this.cache.clear();
+    this.stats = { hits: 0, misses: 0, totalAccessTime: 0 };
+    this.emit('cacheCleared');
   }
 
   /**
-   * Get cache size
+   * Get cache statistics
    */
-  size(): number {
-    return this.cache.size;
-  }
+  getStats(): ModelCacheStats {
+    const modelsByType: Record<string, number> = {};
+    let totalSize = 0;
 
-  /**
-   * Evict the oldest (least recently used) model
-   */
-  private evictOldest(): void {
-    let oldestKey: string | null = null;
-    let oldestTime = Infinity;
-
-    for (const [key, model] of this.cache.entries()) {
-      if (model.lastUsedAt < oldestTime) {
-        oldestTime = model.lastUsedAt;
-        oldestKey = key;
-      }
+    for (const [key, entry] of this.cache.entries()) {
+      const [type] = key.split(':');
+      modelsByType[type] = (modelsByType[type] || 0) + 1;
+      totalSize += entry.size;
     }
 
-    if (oldestKey) {
-      this.cache.delete(oldestKey);
+    return {
+      totalModels: this.cache.size,
+      totalSize,
+      hits: this.stats.hits,
+      misses: this.stats.misses,
+      modelsByType,
+      averageAccessTime:
+        this.stats.totalAccessTime / (this.stats.hits + this.stats.misses) || 0,
+    };
+  }
+
+  /**
+   * Get cache entry details
+   */
+  getEntry(type: string, modelName: string): ModelCacheEntry | undefined {
+    const key = this.getKey(type, modelName);
+    return this.cache.get(key);
+  }
+
+  /**
+   * List all cached models
+   */
+  listModels(): Array<{
+    type: string;
+    modelName: string;
+    entry: ModelCacheEntry;
+  }> {
+    const models: Array<{
+      type: string;
+      modelName: string;
+      entry: ModelCacheEntry;
+    }> = [];
+
+    for (const [key, entry] of this.cache.entries()) {
+      const [type, modelName] = key.split(':');
+      models.push({ type, modelName, entry });
     }
+
+    return models;
   }
 
   /**
-   * Get all cached models
+   * Dispose of the cache
    */
-  getAll(): CachedModel[] {
-    return Array.from(this.cache.values());
+  dispose(): void {
+    if (this.cleanupTimer) {
+      clearInterval(this.cleanupTimer);
+    }
+    this.clear();
+    this.removeAllListeners();
   }
 
   /**
-   * Get cached models by modality
+   * Generate cache key
    */
-  getByModality(modality: Modality): CachedModel[] {
-    return Array.from(this.cache.values()).filter(
-      model => model.modality === modality
-    );
+  private getKey(type: string, modelName: string): string {
+    return `${type}:${modelName}`;
   }
 
   /**
-   * Clean up expired models based on TTL
+   * Evict old models if cache is full
    */
-  cleanup(): void {
-    if (this.options.ttl === 0) {
+  private evictIfNeeded(): void {
+    if (this.cache.size <= (this.options.maxSize || 10)) {
       return;
     }
 
-    const now = Date.now();
-    const keysToDelete: string[] = [];
+    // Sort by last accessed time (oldest first)
+    const entries = Array.from(this.cache.entries()).sort(
+      ([, a], [, b]) => a.lastAccessed.getTime() - b.lastAccessed.getTime()
+    );
 
-    for (const [key, model] of this.cache.entries()) {
-      const age = now - model.loadedAt;
-      if (age > this.options.ttl) {
-        keysToDelete.push(key);
+    // Remove oldest entries until we're under the limit
+    const toRemove = entries.slice(
+      0,
+      entries.length - (this.options.maxSize || 10)
+    );
+
+    for (const [key] of toRemove) {
+      this.cache.delete(key);
+    }
+
+    this.emit('modelsEvicted', { count: toRemove.length });
+  }
+
+  /**
+   * Start cleanup timer
+   */
+  private startCleanupTimer(): void {
+    if (this.options.cleanupInterval) {
+      this.cleanupTimer = setInterval(() => {
+        this.cleanup();
+      }, this.options.cleanupInterval);
+      (this.cleanupTimer as any).unref?.();
+    }
+  }
+
+  /**
+   * Clean up expired models
+   */
+  private cleanup(): void {
+    const now = new Date();
+    const expiredKeys: string[] = [];
+
+    for (const [key, entry] of this.cache.entries()) {
+      if (entry.expiresAt && entry.expiresAt < now) {
+        expiredKeys.push(key);
       }
     }
 
-    keysToDelete.forEach(key => this.cache.delete(key));
+    for (const key of expiredKeys) {
+      this.cache.delete(key);
+    }
+
+    if (expiredKeys.length > 0) {
+      this.emit('modelsExpired', { count: expiredKeys.length });
+    }
   }
 }

@@ -15,6 +15,9 @@ export { useVectorization } from './useVectorization';
 export type {
   UseVectorizationOptions,
   UseVectorizationReturn,
+} from './useVectorization';
+
+export type {
   VectorizeOptions,
   QueryVectorizeOptions,
   VectorizationProgressEventData,

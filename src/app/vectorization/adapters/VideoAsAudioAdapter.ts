@@ -82,9 +82,11 @@ export class VideoAsAudioAdapter implements EmbeddingAdapter {
 
       const ffmpeg = createFFmpeg({
         log: false,
-        progress: p => {
-          if (p.ratio > 0) {
-            console.log(`FFmpeg progress: ${Math.round(p.ratio * 100)}%`);
+        progress: (progress: { ratio: number }) => {
+          if (progress.ratio > 0) {
+            console.log(
+              `FFmpeg progress: ${Math.round(progress.ratio * 100)}%`
+            );
           }
         },
       });

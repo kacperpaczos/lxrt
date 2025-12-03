@@ -166,3 +166,53 @@ export function createLangChainEmbeddings(
 ): LangChainEmbeddings {
   return new LangChainEmbeddings(provider);
 }
+
+/**
+ * Main LangChain Adapter that combines LLM and Embeddings
+ */
+export class LangChainAdapter {
+  public llm: LangChainLLM;
+  public embeddings: LangChainEmbeddings;
+
+  constructor(provider: AIProvider, params?: LangChainLLMParams) {
+    this.llm = new LangChainLLM(provider, params);
+    this.embeddings = new LangChainEmbeddings(provider);
+  }
+
+  /**
+   * Invoke LLM (alias for llm.call)
+   */
+  async invoke(
+    prompt: string | any,
+    options?: LangChainLLMParams
+  ): Promise<string> {
+    // Convert object input to string if needed
+    const promptString =
+      typeof prompt === 'string' ? prompt : JSON.stringify(prompt);
+    return this.llm.call(promptString, options);
+  }
+
+  /**
+   * Embed query (alias for embeddings.embedQuery)
+   */
+  async embedQuery(text: string): Promise<number[]> {
+    return this.embeddings.embedQuery(text);
+  }
+
+  /**
+   * Embed documents (alias for embeddings.embedDocuments)
+   */
+  async embedDocuments(texts: string[]): Promise<number[][]> {
+    return this.embeddings.embedDocuments(texts);
+  }
+
+  /**
+   * Stream generation (alias for llm.stream)
+   */
+  async *stream(
+    promptOrMessages: string | LangChainMessage[],
+    options?: LangChainLLMParams
+  ): AsyncGenerator<string> {
+    yield* this.llm.stream(promptOrMessages, options);
+  }
+}

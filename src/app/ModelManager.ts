@@ -19,28 +19,29 @@ import { TTSModel } from '../models/TTSModel';
 import { STTModel } from '../models/STTModel';
 import { EmbeddingModel } from '../models/EmbeddingModel';
 import { OCRModel } from '../models/OCRModel';
-import { ProgressTracker } from '../utils/ProgressTracker';
 import { EventEmitter } from '@infra/events/EventEmitter';
 import { getConfig } from './state';
 import { ModelUnavailableError } from '@domain/errors';
 import { AutoScaler } from './autoscaler/AutoScaler';
 import { BackendSelector } from './backend/BackendSelector';
 
+export interface ModelManagerOptions {
+  skipCache?: boolean;
+}
+
 export class ModelManager {
   private cache: ModelCache;
   private models: Map<Modality, BaseModel>;
   private configs: Map<Modality, ModelConfig>;
-  private progressTracker: ProgressTracker;
   private eventEmitter: EventEmitter;
   private autoScaler: AutoScaler;
   private backendSelector: BackendSelector;
 
-  constructor(eventEmitter: EventEmitter) {
-    this.cache = new ModelCache();
+  constructor(eventEmitter: EventEmitter, options?: ModelManagerOptions) {
+    this.cache = new ModelCache({ skipCache: options?.skipCache });
     this.models = new Map();
     this.configs = new Map();
     this.eventEmitter = eventEmitter;
-    this.progressTracker = new ProgressTracker(eventEmitter);
     this.backendSelector = new BackendSelector();
     this.autoScaler = new AutoScaler(this.backendSelector);
   }
@@ -52,22 +53,41 @@ export class ModelManager {
     // Check if model is already loaded with the same config
     const existingModel = this.models.get(modality);
     if (existingModel && this.isSameConfig(modality, config)) {
+      // Ensure cache is populated even if model remained loaded while cache was cleared
+      const cached = this.cache.get(modality, config);
+      if (!cached) {
+        const pipeline = existingModel.getRawPipeline();
+        this.cache.set(modality, config, pipeline);
+      }
       return existingModel;
     }
 
-    // Check cache
-    const cached = this.cache.get(modality, config);
-    if (cached) {
-      const model = this.createModelInstance(modality, config);
-      // Restore from cache
-      model.setPipeline(cached.pipeline);
-      this.models.set(modality, model);
+    // Sprawdź, czy TTS ma ustawioną flagę skip - zwróć dummy model
+    if (modality === 'tts' && (config as any).skip) {
+      // Utwórz dummy model, który będzie ignorował wszystkie wywołania
+      const dummyModel = new TTSModel(
+        config as TTSConfig,
+        this.backendSelector
+      );
+      this.models.set(modality, dummyModel);
       this.configs.set(modality, config);
-      return model;
+      return dummyModel;
     }
 
     // Auto-scaler: optionally adjust config based on capabilities and performanceMode
     const scaledConfig = this.autoScaler.autoScale(modality, config);
+
+    // Check cache using scaled config (consistent with what we store)
+    console.log(`[ModelManager] Checking cache for ${modality}:`, scaledConfig);
+    const cached = this.cache.get(modality, scaledConfig);
+    if (cached) {
+      const model = this.createModelInstance(modality, scaledConfig);
+      // Restore from cache - cache.get() returns pipeline directly, not {pipeline: ...}
+      model.setPipeline(cached);
+      this.models.set(modality, model);
+      this.configs.set(modality, scaledConfig);
+      return model;
+    }
     if (scaledConfig !== config) {
       const logger = getConfig().logger;
       logger.debug('[transformers-router] autoscale', {
@@ -81,16 +101,36 @@ export class ModelManager {
     const model = this.createModelInstance(modality, scaledConfig);
 
     // Create progress callback
-    const progressCallback = this.progressTracker.createCallback(
-      modality,
-      config.model
-    );
+    const progressCallback = (progress: {
+      status: string;
+      file?: string;
+      progress?: number;
+      loaded?: number;
+      total?: number;
+    }) => {
+      // Map status to expected enum values
+      const mappedStatus = this.mapStatus(progress.status);
+      this.eventEmitter.emit('progress', {
+        modality,
+        model: (scaledConfig as ModelConfig).model!,
+        file: progress.file,
+        progress: progress.progress,
+        loaded: progress.loaded,
+        total: progress.total,
+        status: mappedStatus,
+      });
+    };
 
     try {
       await model.load(progressCallback);
 
       // Cache the model
       const pipeline = model.getRawPipeline();
+      console.log(`[ModelManager] Caching model ${modality}:`, {
+        modelName: (scaledConfig as ModelConfig).model,
+        hasPipeline: !!pipeline,
+        pipelineType: typeof pipeline,
+      });
       this.cache.set(modality, scaledConfig, pipeline);
 
       // Store in active models
@@ -100,7 +140,7 @@ export class ModelManager {
       // Emit ready event
       this.eventEmitter.emit('ready', {
         modality,
-        model: scaledConfig.model,
+        model: (scaledConfig as ModelConfig).model!,
       });
 
       return model;
@@ -197,7 +237,17 @@ export class ModelManager {
     const modalities = Array.from(this.models.keys());
     await Promise.all(modalities.map(modality => this.unloadModel(modality)));
     this.cache.clear();
-    this.progressTracker.clearAll();
+  }
+
+  /**
+   * Dispose and release all resources (for tests and shutdown)
+   */
+  async dispose(): Promise<void> {
+    try {
+      await this.clearAll();
+    } finally {
+      this.cache.dispose();
+    }
   }
 
   /**
@@ -253,5 +303,39 @@ export class ModelManager {
    */
   getBackendSelector(): BackendSelector {
     return this.backendSelector;
+  }
+
+  /**
+   * Get ModelCache instance (for testing)
+   */
+  getCache(): ModelCache {
+    return this.cache;
+  }
+
+  /**
+   * Map status string to expected enum values
+   */
+  private mapStatus(
+    status: string
+  ): 'downloading' | 'loading' | 'ready' | 'error' {
+    switch (status.toLowerCase()) {
+      case 'downloading':
+      case 'download':
+        return 'downloading';
+      case 'loading':
+      case 'load':
+      case 'initializing':
+        return 'loading';
+      case 'ready':
+      case 'complete':
+      case 'success':
+        return 'ready';
+      case 'error':
+      case 'failed':
+      case 'fail':
+        return 'error';
+      default:
+        return 'loading'; // fallback
+    }
   }
 }

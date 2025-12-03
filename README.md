@@ -17,6 +17,19 @@ A powerful TypeScript wrapper for [Transformers.js](https://huggingface.co/docs/
 - 💪 **TypeScript First** - Full type safety and IntelliSense support
 - 🌐 **Universal** - Works in Node.js and browsers
 
+## Requirements
+
+- **Node.js**: >= 22.21.0 (recommended)
+- **npm**: Latest version
+
+```bash
+# Using nvm (recommended)
+nvm use
+
+# Check Node.js version
+node --version  # Should be >= 22.21.0
+```
+
 ## Installation
 
 ```bash
@@ -1006,7 +1019,74 @@ npm run test:all
 
 # 4. Debug failing tests
 npm run test:integration:ui
+
+# 5. Run new Node.js tests with real models
+npm run test:node:all
+
+# 6. Run only lightweight tests (no heavy LLM/TTS)
+npm run test:node:unit
+
+# 7. Disable modalities if needed for faster testing
+RUN_LLM=0 npm run test:node:integration  # Disable LLM only
+RUN_TTS=0 npm run test:node:integration  # Disable TTS only
 ```
+
+## Node.js Testing with Real Models
+
+The project includes comprehensive Node.js tests that use real AI models through ONNX Runtime (no mocks). These tests provide better validation of actual functionality.
+
+### Test Structure
+
+```
+tests/
+├── tests_old/                    # Legacy tests (mocks, Playwright)
+│   ├── unit/                    # Old unit tests with mocks
+│   ├── integration/             # Old integration tests
+│   ├── integration-browser/     # Browser-based tests with Playwright
+│   └── e2e/                     # End-to-end tests
+└── node/                        # New Node.js tests with real models
+    ├── unit/                    # Unit tests (STT, embeddings, adapters)
+    └── integration/             # Integration tests (flows, multimodal)
+```
+
+### Running Node Tests
+
+```bash
+# Run lightweight unit tests (STT, embeddings, adapters)
+npm run test:node:unit
+
+# Run integration tests (STT flow)
+npm run test:node:integration
+
+# Run all Node tests
+npm run test:node:all
+
+# Run multimodal tests (all modalities enabled by default)
+npm run test:node:integration
+
+# Disable specific modalities if needed for faster testing
+RUN_LLM=0 npm run test:node:integration  # Disable LLM only
+RUN_TTS=0 npm run test:node:integration  # Disable TTS only
+```
+
+### Test Features
+
+- **Real Models**: Tests use actual Transformers.js models via ONNX Runtime
+- **Lightweight by Default**: Uses micro-models (<100MB) for fast CI/CD
+- **Comprehensive by Default**: LLM/TTS tests enabled by default for full validation
+- **Audio Recording**: All tests save timestamped audio files for validation
+- **No Mocks**: All tests validate actual model inference
+- **Node Environment**: Optimized for server-side testing with proper cache management
+
+### Model Configuration for Tests
+
+Tests are configured to use micro-models for performance:
+- **STT**: `Xenova/whisper-tiny` (~40MB) - always enabled
+- **Embeddings**: `Xenova/all-MiniLM-L6-v2` (~80MB) - always enabled
+- **LLM**: `Xenova/gpt2` (~500MB) - **enabled by default**
+- **TTS**: `Xenova/speecht5_tts` (~300MB) - **enabled by default**
+
+**Audio Recordings**: All tests save audio files with timestamps to `test-audio-recordings/` directory for validation and debugging.
 
 ## Performance Tips
 
@@ -1037,7 +1117,15 @@ npm run test:integration:ui
 - [x] Browser-based integration tests
 - [x] E2E testing with Playwright
 
-### Phase 3 (Planned)
+### Phase 3: Node.js Real Model Testing (Completed ✅)
+- [x] ONNX Runtime integration for Node.js testing
+- [x] Real model tests without mocks
+- [x] Micro-model configuration for fast CI/CD
+- [x] Multimodal integration tests (STT → LLM → TTS)
+- [x] Environment-based test configuration
+- [x] Comprehensive Node.js test coverage
+
+### Phase 4 (Planned)
 - [ ] Advanced streaming (token-by-token to UI)
 - [ ] Batch processing
 - [ ] Model quantization on-the-fly
