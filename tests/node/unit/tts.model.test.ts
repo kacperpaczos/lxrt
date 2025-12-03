@@ -1,5 +1,6 @@
 import { createAIProvider, init } from '../../../src/index';
 import { writeFileSync, mkdirSync } from 'node:fs';
+import { Buffer } from 'node:buffer';
 import * as path from 'node:path';
 
 /**
@@ -18,6 +19,10 @@ async function saveAudioWithTimestamp(audioBlob: Blob, prefix: string): Promise<
 
   console.log(`✅ Audio saved: ${audioPath} (${audioBlob.size} bytes)`);
   return audioPath;
+}
+
+async function blobToBuffer(blob: Blob): Promise<Buffer> {
+  return Buffer.from(await blob.arrayBuffer());
 }
 
 describe('TTS Model (Node + ORT)', () => {
@@ -95,8 +100,13 @@ describe('TTS Model (Node + ORT)', () => {
     expect(audio1.size).toBeGreaterThan(0);
     expect(audio2.size).toBeGreaterThan(0);
     
-    // Different speakers should produce different audio
-    expect(audio1.size).not.toBe(audio2.size);
+    const [buffer1, buffer2] = await Promise.all([
+      blobToBuffer(audio1),
+      blobToBuffer(audio2),
+    ]);
+
+    // Different speakers should produce different waveforms even if length matches
+    expect(buffer1.equals(buffer2)).toBe(false);
     
     // Save both for comparison
     await saveAudioWithTimestamp(audio1, 'tts-speaker1');
