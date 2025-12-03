@@ -1,4 +1,4 @@
-import { createAIProvider, init } from '../../../src/index';
+import { createAIProvider, init } from '../../../../src/index';
 import { readFileSync } from 'node:fs';
 import * as path from 'node:path';
 
@@ -21,7 +21,7 @@ describe('STT Model (Node + ORT)', () => {
   });
 
   it('transcribes short WAV from fixtures', async () => {
-    const wavPath = path.join(__dirname, '../../fixtures/audio/test.wav');
+    const wavPath = path.join(__dirname, '../../../fixtures/audio/test.wav');
     const buf = readFileSync(wavPath);
     
     // Convert buffer to Float32Array for Node.js environment
@@ -32,5 +32,4 @@ describe('STT Model (Node + ORT)', () => {
     expect(text.length).toBeGreaterThan(0);
   }, 180000);
 });
-
 

@@ -1,4 +1,4 @@
-import { createAIProvider, init } from '../../../src/index';
+import { createAIProvider, init } from '../../../../src/index';
 import { writeFileSync, mkdirSync } from 'node:fs';
 import { Buffer } from 'node:buffer';
 import * as path from 'node:path';
@@ -135,3 +135,4 @@ describe('TTS Model (Node + ORT)', () => {
     console.log(`✅ Long text audio: ${audioBlob.size} bytes`);
   });
 });
+

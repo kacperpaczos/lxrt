@@ -1,4 +1,4 @@
-import { createAIProvider, init } from '../../../src/index';
+import { createAIProvider, init } from '../../../../src/index';
 
 describe('Embeddings Model (Node + ORT)', () => {
   const provider = createAIProvider({
@@ -30,5 +30,4 @@ describe('Embeddings Model (Node + ORT)', () => {
     expect(a).toBeGreaterThan(0.3);
   });
 });
-
 

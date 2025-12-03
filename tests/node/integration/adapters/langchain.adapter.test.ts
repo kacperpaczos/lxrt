@@ -1,5 +1,5 @@
-import { LangChainAdapter } from '../../../src/adapters/LangChainAdapter';
-import { createAIProvider, init } from '../../../src/index';
+import { LangChainAdapter } from '../../../../src/adapters/LangChainAdapter';
+import { createAIProvider, init } from '../../../../src/index';
 
 describe('LangChain Adapter (Node + ORT)', () => {
   let adapter: LangChainAdapter;
@@ -129,3 +129,4 @@ describe('LangChain Adapter (Node + ORT)', () => {
     console.log(`✅ LangChain Object: "${objectResult}"`);
   });
 });
+

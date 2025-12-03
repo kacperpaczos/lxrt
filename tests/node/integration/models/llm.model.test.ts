@@ -1,4 +1,4 @@
-import { createAIProvider, init } from '../../../src/index';
+import { createAIProvider, init } from '../../../../src/index';
 
 describe('LLM Model (Node + ORT)', () => {
   const provider = createAIProvider({
@@ -73,3 +73,4 @@ describe('LLM Model (Node + ORT)', () => {
     console.log(`✅ Technical: "${technicalResponse.content}"`);
   });
 });
+

@@ -1,4 +1,4 @@
-import { createAIProvider, init } from '../../../src/index';
+import { createAIProvider, init } from '../../../../src/index';
 import { readFileSync } from 'node:fs';
 import * as path from 'node:path';
 
@@ -21,7 +21,7 @@ describe('OCR Model (Node + ORT)', () => {
   });
 
   it('recognizes text from image', async () => {
-    const imagePath = path.join(__dirname, '../../fixtures/images/test.png');
+    const imagePath = path.join(__dirname, '../../../fixtures/images/test.png');
     const imageBuffer = readFileSync(imagePath);
     const imageBlob = new Blob([imageBuffer], { type: 'image/png' });
 
@@ -36,7 +36,7 @@ describe('OCR Model (Node + ORT)', () => {
   });
 
   it('zwraca metadane rozpoznawania', async () => {
-    const imagePath = path.join(__dirname, '../../fixtures/images/test.png');
+    const imagePath = path.join(__dirname, '../../../fixtures/images/test.png');
     const imageBuffer = readFileSync(imagePath);
     const imageBlob = new Blob([imageBuffer], { type: 'image/png' });
 
@@ -59,7 +59,7 @@ describe('OCR Model (Node + ORT)', () => {
     const formats = ['test.jpg', 'test.png', 'test.gif'];
     
     for (const filename of formats) {
-      const imagePath = path.join(__dirname, `../../fixtures/images/${filename}`);
+      const imagePath = path.join(__dirname, `../../../fixtures/images/${filename}`);
       const imageBuffer = readFileSync(imagePath);
       const imageBlob = new Blob([imageBuffer], { type: `image/${filename.split('.').pop()}` });
 
@@ -74,7 +74,7 @@ describe('OCR Model (Node + ORT)', () => {
   });
 
   it('handles opcje OCR', async () => {
-    const imagePath = path.join(__dirname, '../../fixtures/images/test.png');
+    const imagePath = path.join(__dirname, '../../../fixtures/images/test.png');
     const imageBuffer = readFileSync(imagePath);
     const imageBlob = new Blob([imageBuffer], { type: 'image/png' });
 
@@ -92,7 +92,7 @@ describe('OCR Model (Node + ORT)', () => {
 
   it('handles obrazy bez tekstu', async () => {
     // Test with an image that might not have text
-    const imagePath = path.join(__dirname, '../../fixtures/images/test.jpg');
+    const imagePath = path.join(__dirname, '../../../fixtures/images/test.jpg');
     const imageBuffer = readFileSync(imagePath);
     const imageBlob = new Blob([imageBuffer], { type: 'image/jpeg' });
 
@@ -106,3 +106,4 @@ describe('OCR Model (Node + ORT)', () => {
     console.log(`✅ OCR no-text result: "${result.text}"`);
   });
 });
+

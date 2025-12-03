@@ -1,5 +1,5 @@
-import { OpenAIAdapter } from '../../../src/adapters/OpenAIAdapter';
-import { createAIProvider, init } from '../../../src/index';
+import { OpenAIAdapter } from '../../../../src/adapters/OpenAIAdapter';
+import { createAIProvider, init } from '../../../../src/index';
 
 describe('OpenAI Adapter (Node + ORT)', () => {
   let adapter: OpenAIAdapter;
@@ -148,3 +148,4 @@ describe('OpenAI Adapter (Node + ORT)', () => {
     console.log(`✅ OpenAI Streaming: ${JSON.stringify(response).substring(0, 100)}...`);
   });
 });
+
