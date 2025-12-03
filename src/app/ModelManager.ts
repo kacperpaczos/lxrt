@@ -82,8 +82,8 @@ export class ModelManager {
     const cached = this.cache.get(modality, scaledConfig);
     if (cached) {
       const model = this.createModelInstance(modality, scaledConfig);
-      // Restore from cache
-      model.setPipeline(cached.pipeline);
+      // Restore from cache - cache.get() returns pipeline directly, not {pipeline: ...}
+      model.setPipeline(cached);
       this.models.set(modality, model);
       this.configs.set(modality, scaledConfig);
       return model;
