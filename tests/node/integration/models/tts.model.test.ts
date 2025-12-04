@@ -1,7 +1,12 @@
+/**
+ * @tags tts, model, core, audio
+ * @description TTS Model integration tests - tests text-to-speech with SpeechT5
+ */
 import { createAIProvider, init } from '../../../../src/index';
 import { writeFileSync, mkdirSync } from 'node:fs';
 import { Buffer } from 'node:buffer';
 import * as path from 'node:path';
+import { createTestLogger, measureAsync } from '../helpers/test-logger';
 
 /**
  * Save audio blob to file with timestamp
@@ -26,6 +31,8 @@ async function blobToBuffer(blob: Blob): Promise<Buffer> {
 }
 
 describe('TTS Model (Node + ORT)', () => {
+  const logger = createTestLogger('TTS Model');
+  
   const provider = createAIProvider({
     tts: {
       model: 'Xenova/speecht5_tts',
@@ -35,27 +42,41 @@ describe('TTS Model (Node + ORT)', () => {
   });
 
   beforeAll(async () => {
-    await init();
-    await provider.warmup('tts');
+    logger.logTestStart('TTS Model integration tests');
+    logger.logStep('Initializing transformers');
+    await measureAsync(logger, 'init', () => init());
+    
+    logger.logModelLoad('tts', 'Xenova/speecht5_tts', { dtype: 'fp32', device: 'cpu' });
+    await measureAsync(logger, 'warmup-tts', () => provider.warmup('tts'));
   });
 
   afterAll(async () => {
+    logger.logStep('Disposing provider');
     await provider.dispose();
+    logger.logTestEnd(true);
   });
 
   it('generates audio from text', async () => {
     const text = 'Hello, this is a test of text to speech.';
-    const speakerEmbeddings = new Float32Array(512).fill(0.5); // Simple default speaker
+    const speakerEmbeddings = new Float32Array(512).fill(0.5);
     
-    const audioBlob = await provider.speak(text, {
-      speaker: speakerEmbeddings,
-    });
+    logger.logInput('text', text);
+    logger.logInput('speakerEmbeddings', `Float32Array(512) filled with 0.5`);
+    
+    logger.logApiCall('provider.speak()', { text, speakerEmbeddingsSize: 512 });
+    
+    const audioBlob = await measureAsync(logger, 'speak', () => 
+      provider.speak(text, { speaker: speakerEmbeddings })
+    );
 
+    logger.logOutput('audioBlob', audioBlob);
+    
     expect(audioBlob).toBeInstanceOf(Blob);
-    expect(audioBlob.size).toBeGreaterThan(1000); // Should have some content
+    expect(audioBlob.size).toBeGreaterThan(1000);
     
     // Save audio for validation
     const savedPath = await saveAudioWithTimestamp(audioBlob, 'tts-test');
+    logger.logOutput('savedPath', savedPath);
     expect(savedPath).toContain('test-audio-recordings');
     
     console.log(`✅ TTS generated audio: ${audioBlob.size} bytes`);
@@ -66,8 +87,21 @@ describe('TTS Model (Node + ORT)', () => {
     const text2 = 'This is the second test with different content.';
     const speakerEmbeddings = new Float32Array(512).fill(0.5);
     
-    const audio1 = await provider.speak(text1, { speaker: speakerEmbeddings });
-    const audio2 = await provider.speak(text2, { speaker: speakerEmbeddings });
+    logger.logInput('text1', text1);
+    logger.logInput('text2', text2);
+    
+    logger.logApiCall('provider.speak()', { text: text1 });
+    const audio1 = await measureAsync(logger, 'speak-text1', () => 
+      provider.speak(text1, { speaker: speakerEmbeddings })
+    );
+    
+    logger.logApiCall('provider.speak()', { text: text2 });
+    const audio2 = await measureAsync(logger, 'speak-text2', () => 
+      provider.speak(text2, { speaker: speakerEmbeddings })
+    );
+    
+    logger.logOutput('audio1', audio1);
+    logger.logOutput('audio2', audio2);
     
     expect(audio1).toBeInstanceOf(Blob);
     expect(audio2).toBeInstanceOf(Blob);
@@ -92,8 +126,22 @@ describe('TTS Model (Node + ORT)', () => {
     const speaker1 = new Float32Array(512).fill(0.3);
     const speaker2 = new Float32Array(512).fill(0.7);
     
-    const audio1 = await provider.speak(text, { speaker: speaker1 });
-    const audio2 = await provider.speak(text, { speaker: speaker2 });
+    logger.logInput('text', text);
+    logger.logInput('speaker1', 'Float32Array(512) filled with 0.3');
+    logger.logInput('speaker2', 'Float32Array(512) filled with 0.7');
+    
+    logger.logApiCall('provider.speak()', { text, speaker: 'speaker1' });
+    const audio1 = await measureAsync(logger, 'speak-speaker1', () => 
+      provider.speak(text, { speaker: speaker1 })
+    );
+    
+    logger.logApiCall('provider.speak()', { text, speaker: 'speaker2' });
+    const audio2 = await measureAsync(logger, 'speak-speaker2', () => 
+      provider.speak(text, { speaker: speaker2 })
+    );
+    
+    logger.logOutput('audio1', audio1);
+    logger.logOutput('audio2', audio2);
     
     expect(audio1).toBeInstanceOf(Blob);
     expect(audio2).toBeInstanceOf(Blob);
@@ -122,10 +170,18 @@ describe('TTS Model (Node + ORT)', () => {
       'The model should handle this gracefully and produce coherent speech.';
     
     const speakerEmbeddings = new Float32Array(512).fill(0.5);
-    const audioBlob = await provider.speak(longText, {
-      speaker: speakerEmbeddings,
-    });
+    
+    logger.logInput('longText', longText);
+    logger.logInput('textLength', `${longText.length} characters`);
+    
+    logger.logApiCall('provider.speak()', { textLength: longText.length });
+    
+    const audioBlob = await measureAsync(logger, 'speak-long', () => 
+      provider.speak(longText, { speaker: speakerEmbeddings })
+    );
 
+    logger.logOutput('audioBlob', audioBlob);
+    
     expect(audioBlob).toBeInstanceOf(Blob);
     expect(audioBlob.size).toBeGreaterThan(2000); // Longer text should produce more audio
     
@@ -135,4 +191,3 @@ describe('TTS Model (Node + ORT)', () => {
     console.log(`✅ Long text audio: ${audioBlob.size} bytes`);
   });
 });
-
