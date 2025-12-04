@@ -1,0 +1,618 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "description": "Test matrix for transformers-router integration tests",
+  "version": "1.0.0",
+  "generatedAt": "2025-12-04",
+  
+  "testSuites": {
+    "models": {
+      "description": "Individual model tests",
+      "tests": [
+        {
+          "file": "tests/node/integration/models/llm.model.test.ts",
+          "name": "LLM Model (Node + ORT)",
+          "tags": ["llm", "model", "core", "text"],
+          "models": ["Xenova/gpt2"],
+          "testedFunctions": [
+            {
+              "api": "provider.chat()",
+              "description": "Generate text from prompt",
+              "inputType": "string",
+              "outputType": "{ content: string }"
+            }
+          ],
+          "testCases": [
+            {
+              "name": "generates text from prompt",
+              "input": "Hello, how are you?",
+              "expectedOutput": "Non-empty string response"
+            },
+            {
+              "name": "generates różne odpowiedzi dla różnych promptów",
+              "input": ["The weather is", "I love programming because"],
+              "expectedOutput": "Two different non-empty responses"
+            },
+            {
+              "name": "respects maxTokens limit",
+              "input": "Write a very long story about a dragon",
+              "expectedOutput": "Response <= 300 characters"
+            },
+            {
+              "name": "handles różne style generowania",
+              "input": ["Once upon a time, in a magical forest", "The algorithm works by"],
+              "expectedOutput": "Two different style responses"
+            }
+          ]
+        },
+        {
+          "file": "tests/node/integration/models/stt.model.test.ts",
+          "name": "STT Model (Node + ORT)",
+          "tags": ["stt", "model", "core", "audio"],
+          "models": ["Xenova/whisper-tiny"],
+          "testedFunctions": [
+            {
+              "api": "provider.listen()",
+              "description": "Transcribe audio to text",
+              "inputType": "Float32Array",
+              "outputType": "string"
+            }
+          ],
+          "testCases": [
+            {
+              "name": "transcribes short WAV from fixtures",
+              "input": "tests/fixtures/audio/test.wav",
+              "expectedOutput": "Non-empty transcription string"
+            }
+          ]
+        },
+        {
+          "file": "tests/node/integration/models/tts.model.test.ts",
+          "name": "TTS Model (Node + ORT)",
+          "tags": ["tts", "model", "core", "audio"],
+          "models": ["Xenova/speecht5_tts"],
+          "testedFunctions": [
+            {
+              "api": "provider.speak()",
+              "description": "Synthesize speech from text",
+              "inputType": "string + speaker embeddings",
+              "outputType": "Blob (audio/wav)"
+            }
+          ],
+          "testCases": [
+            {
+              "name": "generates audio from text",
+              "input": "Hello, this is a test of text to speech.",
+              "expectedOutput": "Blob > 1000 bytes"
+            },
+            {
+              "name": "generates różne audio dla różnych tekstów",
+              "input": ["This is the first test.", "This is the second test with different content."],
+              "expectedOutput": "Two different audio blobs"
+            },
+            {
+              "name": "handles różne speaker embeddings",
+              "input": "Testing different speaker voices.",
+              "expectedOutput": "Different waveforms for different speakers"
+            },
+            {
+              "name": "generates audio dla długich tekstów",
+              "input": "Long text with multiple sentences...",
+              "expectedOutput": "Blob > 2000 bytes"
+            }
+          ]
+        },
+        {
+          "file": "tests/node/integration/models/ocr.model.test.ts",
+          "name": "OCR Model (Node + ORT)",
+          "tags": ["ocr", "model", "core", "image"],
+          "models": ["Xenova/trocr-small-printed"],
+          "testedFunctions": [
+            {
+              "api": "provider.recognize()",
+              "description": "Recognize text from image",
+              "inputType": "Blob (image)",
+              "outputType": "{ text: string, confidence: number, language: string, regions: array }"
+            }
+          ],
+          "testCases": [
+            {
+              "name": "recognizes text from image",
+              "input": "tests/fixtures/images/test.png",
+              "expectedOutput": "Non-empty text string"
+            },
+            {
+              "name": "zwraca metadane rozpoznawania",
+              "input": "tests/fixtures/images/test.png",
+              "expectedOutput": "Object with text, confidence, language, regions"
+            },
+            {
+              "name": "handles różne formaty obrazów",
+              "input": ["test.jpg", "test.png", "test.gif"],
+              "expectedOutput": "Text from each format"
+            },
+            {
+              "name": "handles opcje OCR",
+              "input": "tests/fixtures/images/test.png + options",
+              "expectedOutput": "Text with confidence >= 0.8"
+            },
+            {
+              "name": "handles obrazy bez tekstu",
+              "input": "tests/fixtures/images/test.jpg",
+              "expectedOutput": "Empty string or detected text"
+            }
+          ]
+        },
+        {
+          "file": "tests/node/integration/models/embeddings.model.test.ts",
+          "name": "Embeddings Model (Node + ORT)",
+          "tags": ["embedding", "model", "core", "text"],
+          "models": ["Xenova/all-MiniLM-L6-v2"],
+          "testedFunctions": [
+            {
+              "api": "provider.embed()",
+              "description": "Generate text embeddings",
+              "inputType": "string | string[]",
+              "outputType": "number[][]"
+            },
+            {
+              "api": "provider.similarity()",
+              "description": "Calculate cosine similarity",
+              "inputType": "string, string",
+              "outputType": "number"
+            }
+          ],
+          "testCases": [
+            {
+              "name": "generates embedding dla tekstu",
+              "input": "Hello world",
+              "expectedOutput": "Non-empty number array"
+            },
+            {
+              "name": "calculates similarity (cosine) > 0.3 for similar texts",
+              "input": ["I love programming", "Coding is fun"],
+              "expectedOutput": "Similarity > 0.3"
+            }
+          ]
+        }
+      ]
+    },
+    
+    "flows": {
+      "description": "End-to-end flow tests",
+      "tests": [
+        {
+          "file": "tests/node/integration/embeddings.flow.test.ts",
+          "name": "Integration: Embeddings flow (Node + ORT)",
+          "tags": ["embedding", "flow", "text"],
+          "models": ["Xenova/all-MiniLM-L6-v2"],
+          "testedFunctions": [
+            {
+              "api": "provider.embed()",
+              "description": "Generate embeddings"
+            },
+            {
+              "api": "provider.similarity()",
+              "description": "Calculate similarity"
+            },
+            {
+              "api": "provider.findSimilar()",
+              "description": "Find most similar text from candidates",
+              "inputType": "string, string[]",
+              "outputType": "{ text: string, similarity: number, index: number }"
+            }
+          ],
+          "testCases": [
+            {
+              "name": "warmup → embed → similarity → dispose",
+              "input": "Various texts",
+              "expectedOutput": "Full lifecycle works"
+            }
+          ]
+        },
+        {
+          "file": "tests/node/integration/stt.flow.test.ts",
+          "name": "Integration: STT flow (Node + ORT)",
+          "tags": ["stt", "flow", "audio"],
+          "models": ["Xenova/whisper-tiny"],
+          "testedFunctions": [
+            {
+              "api": "provider.listen()",
+              "description": "Transcribe audio"
+            }
+          ],
+          "testCases": [
+            {
+              "name": "warmup → listen → dispose",
+              "input": "tests/fixtures/audio/test.wav",
+              "expectedOutput": "Transcription and audio saved"
+            }
+          ]
+        },
+        {
+          "file": "tests/node/integration/multimodal.flow.test.ts",
+          "name": "Integration: Multimodal flow (Node + ORT)",
+          "tags": ["stt", "llm", "tts", "flow", "multimodal", "audio"],
+          "models": ["Xenova/whisper-tiny", "Xenova/gpt2", "Xenova/speecht5_tts"],
+          "testedFunctions": [
+            {
+              "api": "provider.listen()",
+              "description": "STT - audio to text"
+            },
+            {
+              "api": "provider.chat()",
+              "description": "LLM - text processing"
+            },
+            {
+              "api": "provider.speak()",
+              "description": "TTS - text to audio"
+            }
+          ],
+          "testCases": [
+            {
+              "name": "STT processes audio correctly",
+              "input": "Audio file",
+              "expectedOutput": "Transcription"
+            },
+            {
+              "name": "STT → LLM conversation",
+              "input": "Audio → transcription → LLM prompt",
+              "expectedOutput": "LLM response"
+            },
+            {
+              "name": "STT → LLM → TTS roundtrip",
+              "input": "Audio → text → LLM → TTS",
+              "expectedOutput": "New audio file"
+            }
+          ]
+        }
+      ]
+    },
+    
+    "lifecycle": {
+      "description": "Provider lifecycle and cache tests",
+      "tests": [
+        {
+          "file": "tests/node/integration/ai-provider.lifecycle.test.ts",
+          "name": "AIProvider lifecycle (Node + ORT)",
+          "tags": ["lifecycle", "core"],
+          "models": ["Xenova/gpt2", "Xenova/all-MiniLM-L6-v2"],
+          "testedFunctions": [
+            {
+              "api": "provider.warmup()",
+              "description": "Preload model"
+            },
+            {
+              "api": "provider.isReady()",
+              "description": "Check if model is loaded"
+            },
+            {
+              "api": "provider.getStatus()",
+              "description": "Get model status"
+            },
+            {
+              "api": "provider.getAllStatuses()",
+              "description": "Get all model statuses"
+            },
+            {
+              "api": "provider.unload()",
+              "description": "Unload model from memory"
+            },
+            {
+              "api": "provider.updateConfig()",
+              "description": "Update provider configuration"
+            },
+            {
+              "api": "provider.dispose()",
+              "description": "Clean up all resources"
+            }
+          ],
+          "testCases": [
+            {
+              "name": "warms up LLM before inference and keeps it ready",
+              "expectedOutput": "isReady() === true"
+            },
+            {
+              "name": "provides embeddings after explicit warmup",
+              "expectedOutput": "Embedding vectors generated"
+            },
+            {
+              "name": "reports statuses for every configured modality",
+              "expectedOutput": "All statuses returned"
+            },
+            {
+              "name": "unloads models and reloads them on demand",
+              "expectedOutput": "Model unloaded then reloaded"
+            },
+            {
+              "name": "updates configuration and reloads affected models",
+              "expectedOutput": "Config updated, model works"
+            }
+          ]
+        },
+        {
+          "file": "tests/node/integration/model-cache.test.ts",
+          "name": "ModelCache (Node + ORT)",
+          "tags": ["cache", "core"],
+          "models": ["Xenova/gpt2", "Xenova/all-MiniLM-L6-v2"],
+          "testedFunctions": [
+            {
+              "api": "cache.get()",
+              "description": "Get cached model"
+            },
+            {
+              "api": "cache.hasByConfig()",
+              "description": "Check if model is cached"
+            },
+            {
+              "api": "cache.getStats()",
+              "description": "Get cache statistics"
+            },
+            {
+              "api": "cache.invalidate()",
+              "description": "Remove model from cache"
+            },
+            {
+              "api": "cache.clear()",
+              "description": "Clear all cached models"
+            },
+            {
+              "api": "cache.setExpiration()",
+              "description": "Set cache TTL"
+            },
+            {
+              "api": "cache.setMaxSize()",
+              "description": "Set cache size limit"
+            }
+          ],
+          "testCases": [
+            {
+              "name": "tworzy cache instance",
+              "expectedOutput": "ModelCache instance"
+            },
+            {
+              "name": "cacheuje modele po załadowaniu",
+              "expectedOutput": "Model cached after warmup"
+            },
+            {
+              "name": "cacheuje różne typy modeli",
+              "expectedOutput": "LLM and Embedding cached"
+            },
+            {
+              "name": "zwraca undefined dla nieistniejących modeli",
+              "expectedOutput": "undefined"
+            },
+            {
+              "name": "handles cache statistics",
+              "expectedOutput": "Stats with totalModels > 0"
+            },
+            {
+              "name": "handles cache invalidation",
+              "expectedOutput": "Model removed"
+            },
+            {
+              "name": "handles cache clearing",
+              "expectedOutput": "Cache empty"
+            },
+            {
+              "name": "handles cache expiration",
+              "expectedOutput": "Model removed after TTL"
+            },
+            {
+              "name": "handles cache size limits",
+              "expectedOutput": "Cache respects max size"
+            },
+            {
+              "name": "handles cache hit/miss tracking",
+              "expectedOutput": "hits > 0, misses > 0"
+            }
+          ]
+        }
+      ]
+    },
+    
+    "adapters": {
+      "description": "Adapter compatibility tests",
+      "tests": [
+        {
+          "file": "tests/node/integration/adapters/langchain.adapter.test.ts",
+          "name": "LangChain Adapter (Node + ORT)",
+          "tags": ["adapter", "langchain"],
+          "models": ["Xenova/gpt2", "Xenova/all-MiniLM-L6-v2"],
+          "testedFunctions": [
+            {
+              "api": "adapter.invoke()",
+              "description": "LLM chain invocation"
+            },
+            {
+              "api": "adapter.embedQuery()",
+              "description": "Single text embedding"
+            },
+            {
+              "api": "adapter.embedDocuments()",
+              "description": "Batch text embeddings"
+            },
+            {
+              "api": "adapter.stream()",
+              "description": "Streaming LLM response"
+            }
+          ],
+          "testCases": [
+            {
+              "name": "tworzy adapter z providerem",
+              "expectedOutput": "LangChainAdapter instance"
+            },
+            {
+              "name": "handles LLM chain",
+              "input": "What is the capital of France?",
+              "expectedOutput": "String response"
+            },
+            {
+              "name": "handles embedding chain",
+              "input": "Hello world",
+              "expectedOutput": "Number array"
+            },
+            {
+              "name": "handles batch embeddings",
+              "input": ["Hello world", "Goodbye world", "How are you?"],
+              "expectedOutput": "3 embedding arrays"
+            },
+            {
+              "name": "handles streaming",
+              "input": "Tell me a short story",
+              "expectedOutput": "Async iterator of chunks"
+            },
+            {
+              "name": "handles różne parametry",
+              "input": "Count to 3 + options",
+              "expectedOutput": "Response with params applied"
+            },
+            {
+              "name": "handles conversation memory",
+              "input": ["My name is John", "What is my name?"],
+              "expectedOutput": "Two responses (memory context)"
+            },
+            {
+              "name": "handles różne typy inputów",
+              "input": "string and object inputs",
+              "expectedOutput": "Both work"
+            }
+          ]
+        },
+        {
+          "file": "tests/node/integration/adapters/openai.adapter.test.ts",
+          "name": "OpenAI Adapter (Node + ORT)",
+          "tags": ["adapter", "openai"],
+          "models": ["Xenova/gpt2", "Xenova/all-MiniLM-L6-v2"],
+          "testedFunctions": [
+            {
+              "api": "adapter.createChatCompletion()",
+              "description": "OpenAI-compatible chat completion"
+            },
+            {
+              "api": "adapter.createCompletion()",
+              "description": "OpenAI-compatible text completion"
+            },
+            {
+              "api": "adapter.createEmbeddings()",
+              "description": "OpenAI-compatible embeddings"
+            }
+          ],
+          "testCases": [
+            {
+              "name": "tworzy adapter z providerem",
+              "expectedOutput": "OpenAIAdapter instance"
+            },
+            {
+              "name": "handles chat completions",
+              "input": "{ messages: [{ role: 'user', content: 'Hello' }] }",
+              "expectedOutput": "{ choices: [{ message: { content: string } }] }"
+            },
+            {
+              "name": "handles text completions",
+              "input": "{ prompt: 'The future of AI is' }",
+              "expectedOutput": "{ choices: [{ text: string }] }"
+            },
+            {
+              "name": "handles embeddings",
+              "input": "{ input: 'Hello world' }",
+              "expectedOutput": "{ data: [{ embedding: number[] }] }"
+            },
+            {
+              "name": "handles batch embeddings",
+              "input": "{ input: ['Hello', 'World'] }",
+              "expectedOutput": "{ data: [2 embeddings] }"
+            },
+            {
+              "name": "handles different model parameters",
+              "input": "{ temperature: 0.7, top_p: 0.9 }",
+              "expectedOutput": "Response with params"
+            },
+            {
+              "name": "handles streaming responses",
+              "input": "{ stream: true }",
+              "expectedOutput": "Streaming format response"
+            }
+          ]
+        }
+      ]
+    }
+  },
+  
+  "apiCoverage": {
+    "description": "Summary of tested API functions",
+    "provider": {
+      "chat": { "tested": true, "tests": ["llm.model.test.ts", "multimodal.flow.test.ts", "ai-provider.lifecycle.test.ts"] },
+      "listen": { "tested": true, "tests": ["stt.model.test.ts", "stt.flow.test.ts", "multimodal.flow.test.ts"] },
+      "speak": { "tested": true, "tests": ["tts.model.test.ts", "multimodal.flow.test.ts"] },
+      "recognize": { "tested": true, "tests": ["ocr.model.test.ts"] },
+      "embed": { "tested": true, "tests": ["embeddings.model.test.ts", "embeddings.flow.test.ts", "ai-provider.lifecycle.test.ts"] },
+      "similarity": { "tested": true, "tests": ["embeddings.model.test.ts", "embeddings.flow.test.ts"] },
+      "findSimilar": { "tested": true, "tests": ["embeddings.flow.test.ts"] },
+      "warmup": { "tested": true, "tests": ["ai-provider.lifecycle.test.ts", "all integration tests"] },
+      "isReady": { "tested": true, "tests": ["ai-provider.lifecycle.test.ts"] },
+      "getStatus": { "tested": true, "tests": ["ai-provider.lifecycle.test.ts"] },
+      "getAllStatuses": { "tested": true, "tests": ["ai-provider.lifecycle.test.ts"] },
+      "unload": { "tested": true, "tests": ["ai-provider.lifecycle.test.ts"] },
+      "updateConfig": { "tested": true, "tests": ["ai-provider.lifecycle.test.ts"] },
+      "dispose": { "tested": true, "tests": ["all integration tests"] }
+    },
+    "cache": {
+      "get": { "tested": true, "tests": ["model-cache.test.ts"] },
+      "hasByConfig": { "tested": true, "tests": ["model-cache.test.ts"] },
+      "getStats": { "tested": true, "tests": ["model-cache.test.ts"] },
+      "invalidate": { "tested": true, "tests": ["model-cache.test.ts"] },
+      "clear": { "tested": true, "tests": ["model-cache.test.ts"] },
+      "setExpiration": { "tested": true, "tests": ["model-cache.test.ts"] },
+      "setMaxSize": { "tested": true, "tests": ["model-cache.test.ts"] }
+    },
+    "langchainAdapter": {
+      "invoke": { "tested": true, "tests": ["langchain.adapter.test.ts"] },
+      "embedQuery": { "tested": true, "tests": ["langchain.adapter.test.ts"] },
+      "embedDocuments": { "tested": true, "tests": ["langchain.adapter.test.ts"] },
+      "stream": { "tested": true, "tests": ["langchain.adapter.test.ts"] }
+    },
+    "openaiAdapter": {
+      "createChatCompletion": { "tested": true, "tests": ["openai.adapter.test.ts"] },
+      "createCompletion": { "tested": true, "tests": ["openai.adapter.test.ts"] },
+      "createEmbeddings": { "tested": true, "tests": ["openai.adapter.test.ts"] }
+    }
+  },
+  
+  "tags": {
+    "llm": "Language model tests",
+    "stt": "Speech-to-text tests", 
+    "tts": "Text-to-speech tests",
+    "ocr": "Optical character recognition tests",
+    "embedding": "Embedding/vector tests",
+    "model": "Individual model tests",
+    "flow": "End-to-end flow tests",
+    "adapter": "Adapter compatibility tests",
+    "cache": "Model cache tests",
+    "lifecycle": "Provider lifecycle tests",
+    "core": "Core functionality tests",
+    "audio": "Audio processing tests",
+    "image": "Image processing tests",
+    "text": "Text processing tests",
+    "multimodal": "Multi-modal chain tests",
+    "langchain": "LangChain adapter tests",
+    "openai": "OpenAI adapter tests"
+  },
+  
+  "runCommands": {
+    "all": "npm test",
+    "byTag": {
+      "llm": "npm test -- --testPathPattern=\"llm\"",
+      "stt": "npm test -- --testPathPattern=\"stt\"",
+      "tts": "npm test -- --testPathPattern=\"tts\"",
+      "ocr": "npm test -- --testPathPattern=\"ocr\"",
+      "embedding": "npm test -- --testPathPattern=\"embedding\"",
+      "adapter": "npm test -- --testPathPattern=\"adapter\"",
+      "cache": "npm test -- --testPathPattern=\"cache\"",
+      "lifecycle": "npm test -- --testPathPattern=\"lifecycle\"",
+      "flow": "npm test -- --testPathPattern=\"flow\""
+    },
+    "withDebug": "DEBUG_TESTS=true npm test",
+    "specific": "npm test -- --testPathPattern=\"<filename>\""
+  }
+}
+
