@@ -1039,14 +1039,13 @@ The project includes comprehensive Node.js tests that use real AI models through
 
 ```
 tests/
-├── tests_old/                    # Legacy tests (mocks, Playwright)
-│   ├── unit/                    # Old unit tests with mocks
-│   ├── integration/             # Old integration tests
-│   ├── integration-browser/     # Browser-based tests with Playwright
-│   └── e2e/                     # End-to-end tests
-└── node/                        # New Node.js tests with real models
-    ├── unit/                    # Unit tests (STT, embeddings, adapters)
-    └── integration/             # Integration tests (flows, multimodal)
+├── fixtures/                    # Test fixtures (audio, images, text, video)
+└── node/                        # Node.js tests
+    ├── unit/                    # Unit tests with mocks (ProgressTracker, BackendSelector, adapters)
+    └── integration/             # Integration tests with real models
+        ├── models/              # Model tests (TTS, STT, LLM, OCR, Embeddings)
+        ├── adapters/            # Adapter tests (OpenAI, LangChain)
+        └── *.flow.test.ts       # Flow tests (embeddings, multimodal, STT)
 ```
 
 ### Running Node Tests
@@ -1071,12 +1070,17 @@ RUN_TTS=0 npm run test:node:integration  # Disable TTS only
 
 ### Test Features
 
-- **Real Models**: Tests use actual Transformers.js models via ONNX Runtime
-- **Lightweight by Default**: Uses micro-models (<100MB) for fast CI/CD
-- **Comprehensive by Default**: LLM/TTS tests enabled by default for full validation
-- **Audio Recording**: All tests save timestamped audio files for validation
-- **No Mocks**: All tests validate actual model inference
-- **Node Environment**: Optimized for server-side testing with proper cache management
+**Unit Tests** (`tests/node/unit/`):
+- Use mocks for fast execution (< 1s per test)
+- Test business logic without model dependencies
+- Examples: ProgressTracker, BackendSelector, adapters
+
+**Integration Tests** (`tests/node/integration/`):
+- Use real Transformers.js models via ONNX Runtime
+- Validate actual model inference
+- Lightweight by default: micro-models (<100MB) for fast CI/CD
+- Audio recording: TTS/STT tests save timestamped audio files
+- Node environment: Optimized for server-side testing with proper cache management
 
 ### Model Configuration for Tests
 
