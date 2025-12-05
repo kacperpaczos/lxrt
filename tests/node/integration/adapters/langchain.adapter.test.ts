@@ -1,35 +1,64 @@
+/**
+ * @tags adapter, langchain
+ * @description LangChain Adapter integration tests - tests LangChain-compatible interface
+ */
 import { LangChainAdapter } from '../../../../src/adapters/LangChainAdapter';
 import { createAIProvider, init } from '../../../../src/index';
+import { createTestLogger, measureAsync } from '../helpers/test-logger';
 
 describe('LangChain Adapter (Node + ORT)', () => {
+  const logger = createTestLogger('LangChain Adapter');
   let adapter: LangChainAdapter;
   let provider: any;
 
   beforeAll(async () => {
-    await init();
+    logger.logTestStart('LangChain Adapter integration tests');
+    logger.logStep('Initializing transformers');
+    await measureAsync(logger, 'init', () => init());
     
+    logger.logStep('Creating provider with LLM and Embedding');
     provider = createAIProvider({
       llm: { model: 'Xenova/gpt2', dtype: 'fp32', device: 'cpu', maxTokens: 30 },
       embedding: { model: 'Xenova/all-MiniLM-L6-v2', dtype: 'fp32', device: 'cpu' },
     });
     
-    await provider.warmup('llm');
-    await provider.warmup('embedding');
+    logger.logModelLoad('llm', 'Xenova/gpt2', { dtype: 'fp32', device: 'cpu', maxTokens: 30 });
+    logger.logModelLoad('embedding', 'Xenova/all-MiniLM-L6-v2', { dtype: 'fp32', device: 'cpu' });
     
+    await measureAsync(logger, 'warmup-llm', () => provider.warmup('llm'));
+    await measureAsync(logger, 'warmup-embedding', () => provider.warmup('embedding'));
+    
+    logger.logStep('Creating LangChain adapter');
     adapter = new LangChainAdapter(provider);
+    logger.logOutput('adapter', adapter.constructor.name);
   });
 
   afterAll(async () => {
+    logger.logStep('Disposing provider');
     await provider.dispose();
+    logger.logTestEnd(true);
   });
 
   it('tworzy adapter z providerem', () => {
+    logger.logApiCall('adapter check');
+    logger.logOutput('adapter', adapter);
+    logger.logOutput('adapterType', adapter.constructor.name);
+    
     expect(adapter).toBeDefined();
     expect(adapter).toBeInstanceOf(LangChainAdapter);
+    
+    console.log(`✅ LangChain adapter created`);
   });
 
   it('handles LLM chain', async () => {
-    const result = await adapter.invoke('What is the capital of France?');
+    const prompt = 'What is the capital of France?';
+    logger.logInput('prompt', prompt);
+    
+    logger.logApiCall('adapter.invoke()', { prompt });
+    
+    const result = await measureAsync(logger, 'invoke', () => adapter.invoke(prompt));
+    
+    logger.logOutput('result', result);
     
     expect(result).toBeDefined();
     expect(typeof result).toBe('string');
@@ -39,7 +68,15 @@ describe('LangChain Adapter (Node + ORT)', () => {
   });
 
   it('handles embedding chain', async () => {
-    const result = await adapter.embedQuery('Hello world');
+    const text = 'Hello world';
+    logger.logInput('text', text);
+    
+    logger.logApiCall('adapter.embedQuery()', { text });
+    
+    const result = await measureAsync(logger, 'embedQuery', () => adapter.embedQuery(text));
+    
+    logger.logOutput('resultLength', result.length);
+    logger.logOutput('resultSample', `[${result.slice(0, 3).join(', ')}, ...]`);
     
     expect(result).toBeDefined();
     expect(Array.isArray(result)).toBe(true);
@@ -51,7 +88,14 @@ describe('LangChain Adapter (Node + ORT)', () => {
 
   it('handles batch embeddings', async () => {
     const texts = ['Hello world', 'Goodbye world', 'How are you?'];
-    const result = await adapter.embedDocuments(texts);
+    logger.logInput('texts', texts);
+    
+    logger.logApiCall('adapter.embedDocuments()', { textsCount: texts.length });
+    
+    const result = await measureAsync(logger, 'embedDocuments', () => adapter.embedDocuments(texts));
+    
+    logger.logOutput('resultCount', result.length);
+    logger.logOutput('dimensionsPerVector', result[0]?.length);
     
     expect(result).toBeDefined();
     expect(Array.isArray(result)).toBe(true);
@@ -67,17 +111,28 @@ describe('LangChain Adapter (Node + ORT)', () => {
   });
 
   it('handles streaming', async () => {
-    const result = await adapter.stream('Tell me a short story');
+    const prompt = 'Tell me a short story';
+    logger.logInput('prompt', prompt);
+    
+    logger.logApiCall('adapter.stream()', { prompt });
+    
+    const result = await measureAsync(logger, 'stream', () => adapter.stream(prompt));
+    
+    logger.logOutput('resultType', typeof result[Symbol.asyncIterator]);
     
     expect(result).toBeDefined();
     // Should return an async iterator
     expect(typeof result[Symbol.asyncIterator]).toBe('function');
     
     const chunks: string[] = [];
+    logger.logStep('Collecting stream chunks');
+    
     for await (const chunk of result) {
       expect(typeof chunk).toBe('string');
       chunks.push(chunk);
     }
+    
+    logger.logOutput('chunksCount', chunks.length);
     
     expect(chunks.length).toBeGreaterThan(0);
     const fullText = chunks.join('');
@@ -87,10 +142,19 @@ describe('LangChain Adapter (Node + ORT)', () => {
   });
 
   it('handles różne parametry', async () => {
-    const result = await adapter.invoke('Count to 3', {
-      temperature: 0.7,
-      maxTokens: 20,
-    });
+    const prompt = 'Count to 3';
+    const options = { temperature: 0.7, maxTokens: 20 };
+    
+    logger.logInput('prompt', prompt);
+    logger.logInput('options', options);
+    
+    logger.logApiCall('adapter.invoke()', { prompt, options });
+    
+    const result = await measureAsync(logger, 'invoke-params', () => 
+      adapter.invoke(prompt, options)
+    );
+    
+    logger.logOutput('result', result);
     
     expect(result).toBeDefined();
     expect(typeof result).toBe('string');
@@ -100,9 +164,22 @@ describe('LangChain Adapter (Node + ORT)', () => {
   });
 
   it('handles conversation memory', async () => {
-    // Test conversation with memory
-    const response1 = await adapter.invoke('My name is John');
-    const response2 = await adapter.invoke('What is my name?');
+    logger.logStep('Testing conversation memory');
+    
+    const input1 = 'My name is John';
+    const input2 = 'What is my name?';
+    
+    logger.logInput('input1', input1);
+    logger.logApiCall('adapter.invoke()', { prompt: input1, context: 'memory test 1' });
+    
+    const response1 = await measureAsync(logger, 'invoke-memory1', () => adapter.invoke(input1));
+    logger.logOutput('response1', response1);
+    
+    logger.logInput('input2', input2);
+    logger.logApiCall('adapter.invoke()', { prompt: input2, context: 'memory test 2' });
+    
+    const response2 = await measureAsync(logger, 'invoke-memory2', () => adapter.invoke(input2));
+    logger.logOutput('response2', response2);
     
     expect(response1).toBeDefined();
     expect(response2).toBeDefined();
@@ -117,8 +194,20 @@ describe('LangChain Adapter (Node + ORT)', () => {
     const stringInput = 'Hello world';
     const objectInput = { text: 'Hello world', type: 'greeting' };
     
-    const stringResult = await adapter.invoke(stringInput);
-    const objectResult = await adapter.invoke(objectInput);
+    logger.logInput('stringInput', stringInput);
+    logger.logInput('objectInput', objectInput);
+    
+    logger.logApiCall('adapter.invoke()', { input: 'string type' });
+    const stringResult = await measureAsync(logger, 'invoke-string', () => 
+      adapter.invoke(stringInput)
+    );
+    logger.logOutput('stringResult', stringResult);
+    
+    logger.logApiCall('adapter.invoke()', { input: 'object type' });
+    const objectResult = await measureAsync(logger, 'invoke-object', () => 
+      adapter.invoke(objectInput)
+    );
+    logger.logOutput('objectResult', objectResult);
     
     expect(stringResult).toBeDefined();
     expect(objectResult).toBeDefined();
@@ -129,4 +218,3 @@ describe('LangChain Adapter (Node + ORT)', () => {
     console.log(`✅ LangChain Object: "${objectResult}"`);
   });
 });
-

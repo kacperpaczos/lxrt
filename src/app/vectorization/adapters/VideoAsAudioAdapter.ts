@@ -6,9 +6,28 @@ import type { EmbeddingAdapter, EmbeddingResult } from './EmbeddingAdapter';
 import type { VectorModality } from '../../../core/types';
 import { AudioEmbeddingAdapter } from './AudioEmbeddingAdapter';
 
+/**
+ * FFmpeg.wasm instance interface
+ * Matches @ffmpeg/ffmpeg createFFmpeg() return type
+ */
+interface FFmpegWasm {
+  load(): Promise<void>;
+  run(...args: string[]): Promise<void>;
+  FS(method: 'writeFile', path: string, data: Uint8Array): void;
+  FS(method: 'readFile', path: string): Uint8Array;
+  FS(method: 'unlink', path: string): void;
+}
+
+/**
+ * FFmpeg fetchFile function type
+ */
+type FetchFileFn = (file: File | string | Blob) => Promise<Uint8Array>;
+
 export class VideoAsAudioAdapter implements EmbeddingAdapter {
   private audioAdapter: AudioEmbeddingAdapter;
   private ffmpegLoaded = false;
+  private ffmpeg?: FFmpegWasm;
+  private fetchFile?: FetchFileFn;
 
   constructor() {
     this.audioAdapter = new AudioEmbeddingAdapter();
@@ -94,16 +113,17 @@ export class VideoAsAudioAdapter implements EmbeddingAdapter {
       await ffmpeg.load();
 
       // Store ffmpeg instance for later use
-      (this as any).ffmpeg = ffmpeg;
-      (this as any).fetchFile = fetchFile;
+      // Type assertion needed as createFFmpeg returns a compatible but differently typed object
+      this.ffmpeg = ffmpeg as unknown as FFmpegWasm;
+      this.fetchFile = fetchFile as unknown as FetchFileFn;
     } catch (error) {
       throw new Error(`Failed to load FFmpeg: ${error}`);
     }
   }
 
   private async extractAudioFromVideo(file: File): Promise<ArrayBuffer> {
-    const ffmpeg = (this as any).ffmpeg;
-    const fetchFile = (this as any).fetchFile;
+    const ffmpeg = this.ffmpeg;
+    const fetchFile = this.fetchFile;
 
     if (!ffmpeg || !fetchFile) {
       throw new Error('FFmpeg not initialized');
@@ -134,10 +154,10 @@ export class VideoAsAudioAdapter implements EmbeddingAdapter {
       ffmpeg.FS('unlink', 'input_video');
       ffmpeg.FS('unlink', 'output_audio.wav');
 
-      return data.buffer.slice(
-        data.byteOffset,
-        data.byteOffset + data.byteLength
-      );
+      // Copy data to new ArrayBuffer to ensure proper type
+      const result = new ArrayBuffer(data.byteLength);
+      new Uint8Array(result).set(data);
+      return result;
     } catch (error) {
       throw new Error(`FFmpeg audio extraction failed: ${error}`);
     }

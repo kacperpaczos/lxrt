@@ -20,7 +20,7 @@ async function getTransformers() {
 
 export class OCRModel extends BaseModel<OCRConfig> {
   private backendSelector?: BackendSelector;
-  private worker: any = null;
+  private worker: unknown = null;
 
   constructor(config: OCRConfig, backendSelector?: BackendSelector) {
     super('ocr', config);
@@ -108,8 +108,8 @@ export class OCRModel extends BaseModel<OCRConfig> {
     try {
       // Use Transformers.js OCR pipeline instead of Tesseract
       const pipeline = this.getPipeline() as (
-        input: any,
-        opts?: any
+        input: unknown,
+        opts?: unknown
       ) => Promise<{ generated_text: string }>;
 
       const result = await pipeline(image, options);
@@ -169,7 +169,7 @@ export class OCRModel extends BaseModel<OCRConfig> {
   /**
    * Get the underlying pipeline
    */
-  protected getPipeline(): any {
+  protected getPipeline(): unknown {
     if (!this.pipeline) {
       throw new InferenceError('OCR pipeline not loaded', 'ocr');
     }

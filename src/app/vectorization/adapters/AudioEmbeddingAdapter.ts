@@ -4,10 +4,17 @@
 
 import type { EmbeddingAdapter, EmbeddingResult } from './EmbeddingAdapter';
 import type { VectorModality } from '../../../core/types';
+import type { CLAPPipelineOutput, TensorLike } from '../../../types/external';
 
 export class AudioEmbeddingAdapter implements EmbeddingAdapter {
   private initialized = false;
-  private pipeline: any = null;
+  // Pipeline is typed loosely due to Transformers.js complex overloads
+  private pipeline:
+    | ((
+        input: Float32Array,
+        options?: Record<string, unknown>
+      ) => Promise<CLAPPipelineOutput>)
+    | null = null;
 
   getSupportedModalities(): VectorModality[] {
     return ['audio'];
@@ -36,13 +43,15 @@ export class AudioEmbeddingAdapter implements EmbeddingAdapter {
       const { pipeline } = await import('@huggingface/transformers');
 
       // Initialize CLAP pipeline for audio embeddings
-      this.pipeline = await pipeline(
+      // Type assertion needed due to Transformers.js complex overloads
+      const loadedPipeline = await pipeline(
         'feature-extraction',
         'laion/clap-htsat-fused',
         {
           device: this.getPreferredDevice(),
         }
       );
+      this.pipeline = loadedPipeline as unknown as typeof this.pipeline;
 
       this.initialized = true;
     } catch (error) {
@@ -60,7 +69,7 @@ export class AudioEmbeddingAdapter implements EmbeddingAdapter {
       const audioBuffer = await this.fileToAudioBuffer(file);
 
       // Process through CLAP pipeline
-      const output = await this.pipeline(audioBuffer);
+      const output = await this.pipeline!(audioBuffer);
 
       // Extract embedding (assuming the model returns pooled embeddings)
       const vector = this.extractEmbedding(output);
@@ -150,16 +159,16 @@ export class AudioEmbeddingAdapter implements EmbeddingAdapter {
     });
   }
 
-  private extractEmbedding(output: any): Float32Array {
+  private extractEmbedding(output: CLAPPipelineOutput): Float32Array {
     // Extract the embedding from the pipeline output
     // This depends on the specific CLAP model implementation
-    if (output && output.pooled_output) {
+    if (output.pooled_output) {
       return new Float32Array(output.pooled_output.data);
     }
 
-    if (output && output.last_hidden_state) {
+    if (output.last_hidden_state) {
       // Use mean pooling if pooled output is not available
-      const hiddenState = output.last_hidden_state;
+      const hiddenState: TensorLike = output.last_hidden_state;
       const embeddingSize = hiddenState.dims[hiddenState.dims.length - 1];
       const sequenceLength = hiddenState.dims[hiddenState.dims.length - 2];
 

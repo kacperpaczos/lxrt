@@ -4,10 +4,21 @@
 
 import type { EmbeddingAdapter, EmbeddingResult } from './EmbeddingAdapter';
 import type { VectorModality } from '../../../core/types';
+import type {
+  CLIPPipelineOutput,
+  DocumentLike,
+  ImageElementWithEvents,
+} from '../../../types/external';
 
 export class ImageEmbeddingAdapter implements EmbeddingAdapter {
   private initialized = false;
-  private pipeline: any = null;
+  // Pipeline is typed loosely due to Transformers.js complex overloads
+  private pipeline:
+    | ((
+        input: ImageData,
+        options?: Record<string, unknown>
+      ) => Promise<CLIPPipelineOutput>)
+    | null = null;
 
   getSupportedModalities(): VectorModality[] {
     return ['image'];
@@ -36,13 +47,15 @@ export class ImageEmbeddingAdapter implements EmbeddingAdapter {
       const { pipeline } = await import('@huggingface/transformers');
 
       // Initialize CLIP pipeline for image embeddings
-      this.pipeline = await pipeline(
+      // Type assertion needed due to Transformers.js complex overloads
+      const loadedPipeline = await pipeline(
         'image-to-text',
         'openai/clip-vit-base-patch32',
         {
           device: this.getPreferredDevice(),
         }
       );
+      this.pipeline = loadedPipeline as unknown as typeof this.pipeline;
 
       this.initialized = true;
     } catch (error) {
@@ -62,7 +75,7 @@ export class ImageEmbeddingAdapter implements EmbeddingAdapter {
       const imageData = await this.fileToImageData(file);
 
       // Process through CLIP pipeline
-      const output = await this.pipeline(imageData, {
+      const output = await this.pipeline!(imageData, {
         return_tensors: 'pt',
       });
 
@@ -109,7 +122,8 @@ export class ImageEmbeddingAdapter implements EmbeddingAdapter {
         return flat;
       }
 
-      return this.extractTextEmbedding(output);
+      // Cast to CLIPPipelineOutput for typed extraction
+      return this.extractTextEmbedding(output as unknown as CLIPPipelineOutput);
     } catch (error) {
       throw new Error(`Text processing failed: ${error}`);
     }
@@ -139,10 +153,11 @@ export class ImageEmbeddingAdapter implements EmbeddingAdapter {
 
   private async fileToImageData(file: File): Promise<ImageData> {
     return new Promise((resolve, reject) => {
-      const img = new Image();
+      const img = new Image() as ImageElementWithEvents;
 
       // Always resolve document dynamically from globalThis to honor runtime overrides in tests
-      const doc = (globalThis as any).document;
+      const doc = (globalThis as unknown as { document?: DocumentLike })
+        .document;
 
       if (!doc || typeof doc.createElement !== 'function') {
         reject(new Error('Canvas context not available'));
@@ -203,31 +218,24 @@ export class ImageEmbeddingAdapter implements EmbeddingAdapter {
       img.src = url;
 
       // Cleanup URL after load to satisfy tests and avoid leaks
-      const onLoadCleanup = () => URL.revokeObjectURL(url);
-      if ('addEventListener' in img) {
-        (img as any).addEventListener('load', onLoadCleanup);
-      } else {
-        // Fallback for test images that use onload setter
-        const originalOnload = (img as any).onload;
-        (img as any).onload = () => {
-          try {
-            onLoadCleanup();
-          } catch {
-            // Ignore revoke errors
-          }
-          if (originalOnload) originalOnload();
-        };
-      }
+      const onLoadCleanup = () => {
+        try {
+          URL.revokeObjectURL(url);
+        } catch {
+          // Ignore revoke errors
+        }
+      };
+      img.addEventListener('load', onLoadCleanup);
     });
   }
 
-  private extractEmbedding(output: any): Float32Array {
+  private extractEmbedding(output: CLIPPipelineOutput): Float32Array {
     // Extract image embedding from CLIP output
-    if (output && output.image_embeds) {
+    if (output.image_embeds) {
       return new Float32Array(output.image_embeds.data);
     }
 
-    if (output && output.logits_per_image) {
+    if (output.logits_per_image) {
       // Alternative extraction method
       const logits = output.logits_per_image;
       return new Float32Array(
@@ -238,13 +246,13 @@ export class ImageEmbeddingAdapter implements EmbeddingAdapter {
     throw new Error('Unable to extract image embedding from model output');
   }
 
-  private extractTextEmbedding(output: any): Float32Array {
+  private extractTextEmbedding(output: CLIPPipelineOutput): Float32Array {
     // Extract text embedding from CLIP output
-    if (output && output.text_embeds) {
+    if (output.text_embeds) {
       return new Float32Array(output.text_embeds.data);
     }
 
-    if (output && output.logits_per_text) {
+    if (output.logits_per_text) {
       // Alternative extraction method
       const logits = output.logits_per_text;
       return new Float32Array(
@@ -253,7 +261,7 @@ export class ImageEmbeddingAdapter implements EmbeddingAdapter {
     }
 
     // Some mocks may return image-like structure for text; accept it for tests
-    if (output && output.image_embeds) {
+    if (output.image_embeds) {
       return new Float32Array(output.image_embeds.data);
     }
 

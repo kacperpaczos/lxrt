@@ -8,8 +8,8 @@ describe('ProgressTracker (Node + ORT)', () => {
   });
 
   afterEach(() => {
-    // ProgressTracker doesn't have dispose method, just clear
-    tracker.clear();
+    // Properly dispose tracker to clean up timers
+    tracker.dispose();
   });
 
   it('tworzy tracker instance', () => {

@@ -1,8 +1,15 @@
+/**
+ * @tags ocr, model, core, image
+ * @description OCR Model integration tests - tests text recognition with TrOCR
+ */
 import { createAIProvider, init } from '../../../../src/index';
 import { readFileSync } from 'node:fs';
 import * as path from 'node:path';
+import { createTestLogger, measureAsync } from '../helpers/test-logger';
 
 describe('OCR Model (Node + ORT)', () => {
+  const logger = createTestLogger('OCR Model');
+  
   const provider = createAIProvider({
     ocr: {
       model: 'Xenova/trocr-small-printed',
@@ -12,20 +19,36 @@ describe('OCR Model (Node + ORT)', () => {
   });
 
   beforeAll(async () => {
-    await init();
-    await provider.warmup('ocr');
+    logger.logTestStart('OCR Model integration tests');
+    logger.logStep('Initializing transformers');
+    await measureAsync(logger, 'init', () => init());
+    
+    logger.logModelLoad('ocr', 'Xenova/trocr-small-printed', { dtype: 'fp32', device: 'cpu' });
+    await measureAsync(logger, 'warmup-ocr', () => provider.warmup('ocr'));
   });
 
   afterAll(async () => {
+    logger.logStep('Disposing provider');
     await provider.dispose();
+    logger.logTestEnd(true);
   });
 
   it('recognizes text from image', async () => {
     const imagePath = path.join(__dirname, '../../../fixtures/images/test.png');
+    logger.logInput('imagePath', imagePath);
+    
+    logger.logStep('Loading image file');
     const imageBuffer = readFileSync(imagePath);
+    logger.logOutput('imageBufferSize', `${imageBuffer.length} bytes`);
+    
     const imageBlob = new Blob([imageBuffer], { type: 'image/png' });
+    logger.logOutput('imageBlob', imageBlob);
 
-    const result = await provider.recognize(imageBlob);
+    logger.logApiCall('provider.recognize()', { imageType: 'image/png', size: imageBuffer.length });
+    
+    const result = await measureAsync(logger, 'recognize', () => provider.recognize(imageBlob));
+    
+    logger.logOutput('result', result);
     
     expect(result).toBeDefined();
     expect(result.text).toBeDefined();
@@ -37,10 +60,19 @@ describe('OCR Model (Node + ORT)', () => {
 
   it('zwraca metadane rozpoznawania', async () => {
     const imagePath = path.join(__dirname, '../../../fixtures/images/test.png');
+    logger.logInput('imagePath', imagePath);
+    
     const imageBuffer = readFileSync(imagePath);
     const imageBlob = new Blob([imageBuffer], { type: 'image/png' });
 
-    const result = await provider.recognize(imageBlob);
+    logger.logApiCall('provider.recognize()', { expectMetadata: true });
+    
+    const result = await measureAsync(logger, 'recognize-metadata', () => provider.recognize(imageBlob));
+    
+    logger.logOutput('result.text', result.text);
+    logger.logOutput('result.confidence', result.confidence);
+    logger.logOutput('result.language', result.language);
+    logger.logOutput('result.regions', result.regions);
     
     expect(result).toHaveProperty('text');
     expect(result).toHaveProperty('confidence');
@@ -58,12 +90,20 @@ describe('OCR Model (Node + ORT)', () => {
   it('handles różne formaty obrazów', async () => {
     const formats = ['test.jpg', 'test.png', 'test.gif'];
     
+    logger.logInput('formats', formats);
+    
     for (const filename of formats) {
+      logger.logStep(`Processing ${filename}`);
+      
       const imagePath = path.join(__dirname, `../../../fixtures/images/${filename}`);
       const imageBuffer = readFileSync(imagePath);
       const imageBlob = new Blob([imageBuffer], { type: `image/${filename.split('.').pop()}` });
 
-      const result = await provider.recognize(imageBlob);
+      logger.logApiCall('provider.recognize()', { format: filename });
+      
+      const result = await measureAsync(logger, `recognize-${filename}`, () => provider.recognize(imageBlob));
+      
+      logger.logOutput(`result-${filename}`, result);
       
       expect(result).toBeDefined();
       expect(result.text).toBeDefined();
@@ -75,13 +115,21 @@ describe('OCR Model (Node + ORT)', () => {
 
   it('handles opcje OCR', async () => {
     const imagePath = path.join(__dirname, '../../../fixtures/images/test.png');
+    logger.logInput('imagePath', imagePath);
+    
     const imageBuffer = readFileSync(imagePath);
     const imageBlob = new Blob([imageBuffer], { type: 'image/png' });
 
-    const result = await provider.recognize(imageBlob, {
-      language: 'en',
-      confidence: 0.8,
-    });
+    const options = { language: 'en', confidence: 0.8 };
+    logger.logInput('options', options);
+    
+    logger.logApiCall('provider.recognize()', { options });
+    
+    const result = await measureAsync(logger, 'recognize-options', () => 
+      provider.recognize(imageBlob, options)
+    );
+    
+    logger.logOutput('result', result);
     
     expect(result).toBeDefined();
     expect(result.text).toBeDefined();
@@ -93,10 +141,17 @@ describe('OCR Model (Node + ORT)', () => {
   it('handles obrazy bez tekstu', async () => {
     // Test with an image that might not have text
     const imagePath = path.join(__dirname, '../../../fixtures/images/test.jpg');
+    logger.logInput('imagePath', imagePath);
+    logger.logStep('Testing image that might not have clear text');
+    
     const imageBuffer = readFileSync(imagePath);
     const imageBlob = new Blob([imageBuffer], { type: 'image/jpeg' });
 
-    const result = await provider.recognize(imageBlob);
+    logger.logApiCall('provider.recognize()', { expectEmpty: 'possible' });
+    
+    const result = await measureAsync(logger, 'recognize-notext', () => provider.recognize(imageBlob));
+    
+    logger.logOutput('result', result);
     
     expect(result).toBeDefined();
     expect(result.text).toBeDefined();
@@ -106,4 +161,3 @@ describe('OCR Model (Node + ORT)', () => {
     console.log(`✅ OCR no-text result: "${result.text}"`);
   });
 });
-
