@@ -12,9 +12,15 @@ import type {
   VectorQueriedEventData,
   VectorDeletedEventData,
 } from './ResourceUsageEstimator';
+import type {
+  PerformanceWithMemory,
+  NavigatorWithDeviceMemory,
+  TypedEventHandler,
+} from '../../types/external';
 
 export class LocalResourceUsageEstimator implements ResourceUsageEstimator {
-  private eventListeners: Map<string, Set<(data: any) => void>> = new Map();
+  private eventListeners: Map<string, Set<TypedEventHandler<unknown>>> =
+    new Map();
   private measurementStartTimes: Map<string, number> = new Map();
   private quotaThresholds: { warn: number; high: number; critical: number };
 
@@ -75,8 +81,9 @@ export class LocalResourceUsageEstimator implements ResourceUsageEstimator {
 
     // Check memory usage
     if (usage.memoryMB) {
-      const memoryRatio =
-        (usage.memoryMB / (navigator as any).deviceMemory) * 1024; // Approximate max memory
+      const nav = navigator as NavigatorWithDeviceMemory;
+      const deviceMemory = nav.deviceMemory ?? 4; // Default to 4GB if not available
+      const memoryRatio = (usage.memoryMB / deviceMemory) * 1024; // Approximate max memory
 
       if (memoryRatio >= this.quotaThresholds.critical) {
         level = 'critical';
@@ -110,17 +117,18 @@ export class LocalResourceUsageEstimator implements ResourceUsageEstimator {
     };
   }
 
-  on<T>(event: string, handler: (data: T) => void): () => void {
+  on<T>(event: string, handler: TypedEventHandler<T>): () => void {
     if (!this.eventListeners.has(event)) {
       this.eventListeners.set(event, new Set());
     }
-    this.eventListeners.get(event)!.add(handler);
+    // Cast to unknown handler for storage, will be called with proper type
+    this.eventListeners.get(event)!.add(handler as TypedEventHandler<unknown>);
 
     // Return unsubscribe function
     return () => {
       const listeners = this.eventListeners.get(event);
       if (listeners) {
-        listeners.delete(handler);
+        listeners.delete(handler as TypedEventHandler<unknown>);
         if (listeners.size === 0) {
           this.eventListeners.delete(event);
         }
@@ -206,19 +214,20 @@ export class LocalResourceUsageEstimator implements ResourceUsageEstimator {
   }
 
   private getMemoryInfo(): { usedMB?: number; limitMB?: number } | null {
-    // Use Performance API if available
-    if ('memory' in performance) {
-      const memory = (performance as any).memory;
+    // Use Performance API if available (Chrome-specific)
+    const perf = performance as PerformanceWithMemory;
+    if (perf.memory) {
       return {
-        usedMB: memory.usedJSHeapSize / (1024 * 1024),
-        limitMB: memory.jsHeapSizeLimit / (1024 * 1024),
+        usedMB: perf.memory.usedJSHeapSize / (1024 * 1024),
+        limitMB: perf.memory.jsHeapSizeLimit / (1024 * 1024),
       };
     }
 
     // Fallback: estimate based on device memory
-    if ('deviceMemory' in navigator) {
+    const nav = navigator as NavigatorWithDeviceMemory;
+    if (nav.deviceMemory) {
       return {
-        usedMB: (navigator as any).deviceMemory * 1024 * 0.1, // Rough estimate
+        usedMB: nav.deviceMemory * 1024 * 0.1, // Rough estimate
       };
     }
 

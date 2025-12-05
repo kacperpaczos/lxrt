@@ -63,7 +63,7 @@ export class ModelManager {
     }
 
     // Sprawdź, czy TTS ma ustawioną flagę skip - zwróć dummy model
-    if (modality === 'tts' && (config as any).skip) {
+    if (modality === 'tts' && (config as TTSConfig).skip) {
       // Utwórz dummy model, który będzie ignorował wszystkie wywołania
       const dummyModel = new TTSModel(
         config as TTSConfig,

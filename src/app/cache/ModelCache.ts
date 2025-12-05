@@ -10,9 +10,10 @@
  */
 
 import { EventEmitter } from 'events';
+import type { ModelConfig } from '../../core/types';
 
 export interface ModelCacheEntry {
-  model: any;
+  model: unknown;
   loadedAt: Date;
   lastAccessed: Date;
   accessCount: number;
@@ -97,13 +98,16 @@ export class ModelCache extends EventEmitter {
   /**
    * Get a cached model (ModelManager interface)
    */
-  get(type: string, config: any): any | undefined {
+  get(type: string, config: ModelConfig): unknown | undefined {
     // Jeśli skipCache jest włączony, zawsze zwróć undefined
     if (this.options.skipCache) {
       return undefined;
     }
 
     const modelName = config.model;
+    if (!modelName) {
+      return undefined;
+    }
     if (typeof console !== 'undefined' && console.log) {
       console.log(`[ModelCache] get(${type}, ${JSON.stringify(config)})`);
     }
@@ -117,7 +121,7 @@ export class ModelCache extends EventEmitter {
   /**
    * Get a cached model by name (internal method)
    */
-  private getByName(type: string, modelName: string): any | undefined {
+  private getByName(type: string, modelName: string): unknown | undefined {
     const key = this.getKey(type, modelName);
     if (typeof console !== 'undefined' && console.log) {
       console.log(
@@ -150,7 +154,7 @@ export class ModelCache extends EventEmitter {
   /**
    * Check if a model is cached (test interface)
    */
-  hasByConfig(type: string, configOrModelName: string | any): boolean {
+  hasByConfig(type: string, configOrModelName: string | ModelConfig): boolean {
     // Jeśli skipCache jest włączony, zawsze zwróć false
     if (this.options.skipCache) {
       return false;
@@ -160,6 +164,9 @@ export class ModelCache extends EventEmitter {
       return this.hasByName(type, configOrModelName);
     } else {
       const modelName = configOrModelName.model;
+      if (!modelName) {
+        return false;
+      }
       return this.hasByName(type, modelName);
     }
   }
@@ -206,13 +213,21 @@ export class ModelCache extends EventEmitter {
   /**
    * Set a model in cache (ModelManager interface)
    */
-  set(type: string, config: any, pipeline: any, size: number = 0): void {
+  set(
+    type: string,
+    config: ModelConfig,
+    pipeline: unknown,
+    size: number = 0
+  ): void {
     // Jeśli skipCache jest włączony, nie cacheuj
     if (this.options.skipCache) {
       return;
     }
 
     const modelName = config.model;
+    if (!modelName) {
+      return;
+    }
     if (typeof console !== 'undefined' && console.log) {
       console.log(
         `[ModelCache] set(${type}, ${JSON.stringify(config)}, pipeline: ${!!pipeline})`
@@ -227,7 +242,7 @@ export class ModelCache extends EventEmitter {
   setByName(
     type: string,
     modelName: string,
-    model: any,
+    model: unknown,
     size: number = 0
   ): void {
     const key = this.getKey(type, modelName);
@@ -291,7 +306,7 @@ export class ModelCache extends EventEmitter {
         },
         Math.max(0, maxAge)
       );
-      (timer as any).unref?.();
+      (timer as ReturnType<typeof setTimeout>).unref?.();
     }
   }
 
@@ -418,7 +433,7 @@ export class ModelCache extends EventEmitter {
       this.cleanupTimer = setInterval(() => {
         this.cleanup();
       }, this.options.cleanupInterval);
-      (this.cleanupTimer as any).unref?.();
+      (this.cleanupTimer as ReturnType<typeof setInterval>).unref?.();
     }
   }
 

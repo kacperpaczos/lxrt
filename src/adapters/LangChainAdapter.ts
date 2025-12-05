@@ -183,7 +183,7 @@ export class LangChainAdapter {
    * Invoke LLM (alias for llm.call)
    */
   async invoke(
-    prompt: string | any,
+    prompt: string | unknown,
     options?: LangChainLLMParams
   ): Promise<string> {
     // Convert object input to string if needed

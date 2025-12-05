@@ -22,7 +22,7 @@ export interface ProgressData {
   progress: number;
   message: string;
   timestamp: Date;
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
 }
 
 export interface ProgressStats {
@@ -127,9 +127,11 @@ export class ProgressTracker extends EventEmitter {
     event: string,
     handler: (data: T) => void
   ): () => void {
-    super.on(event, handler as any);
+    // EventEmitter expects generic handler, cast is safe for typed events
+    const wrappedHandler = (data: unknown) => handler(data as T);
+    super.on(event, wrappedHandler);
     return () => {
-      super.off(event, handler as any);
+      super.off(event, wrappedHandler);
     };
   }
 
@@ -167,7 +169,7 @@ export class ProgressTracker extends EventEmitter {
     stage: string,
     progress: number,
     message: string,
-    metadata?: Record<string, any>
+    metadata?: Record<string, unknown>
   ): void {
     const progressData: ProgressData = {
       stage,
@@ -187,7 +189,7 @@ export class ProgressTracker extends EventEmitter {
   complete(
     stage: string,
     message: string = 'Operation completed',
-    metadata?: Record<string, any>
+    metadata?: Record<string, unknown>
   ): void {
     this.update(stage, 100, message, metadata);
     this.stats.completedOperations++;
@@ -197,7 +199,7 @@ export class ProgressTracker extends EventEmitter {
   /**
    * Mark operation as error
    */
-  error(stage: string, error: Error, metadata?: Record<string, any>): void {
+  error(stage: string, error: Error, metadata?: Record<string, unknown>): void {
     this.update(stage, 0, `Error: ${error.message}`, {
       ...metadata,
       error: error.message,

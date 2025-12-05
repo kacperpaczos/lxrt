@@ -19,14 +19,14 @@ export interface BackendInfo {
     memory: number;
     speed: number;
   };
-  settings: Record<string, any>;
+  settings: Record<string, unknown>;
   fallback?: string;
   error?: string;
 }
 
 export interface BackendConfig {
   type: string;
-  settings: Record<string, any>;
+  settings: Record<string, unknown>;
   optimized: boolean;
 }
 
@@ -392,7 +392,7 @@ export class BackendSelector extends EventEmitter {
   /**
    * Get default settings for backend
    */
-  private getDefaultSettings(type: string): Record<string, any> {
+  private getDefaultSettings(type: string): Record<string, unknown> {
     switch (type) {
       case 'gpu':
         return {
