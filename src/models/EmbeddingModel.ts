@@ -177,7 +177,7 @@ export class EmbeddingModel extends BaseModel<EmbeddingConfig> {
               ? 'cpu'
               : (dev as 'cpu' | 'gpu' | 'webgpu');
           const logger = getConfig().logger;
-          logger.debug('[transformers-router] load Embedding try', {
+          logger.debug('[lxrt] load Embedding try', {
             device: dev,
             dtype,
           });
@@ -202,7 +202,7 @@ export class EmbeddingModel extends BaseModel<EmbeddingConfig> {
           break;
         } catch (err) {
           const logger = getConfig().logger;
-          logger.debug('[transformers-router] load Embedding fallback', {
+          logger.debug('[lxrt] load Embedding fallback', {
             from: dev,
             error: (err as Error)?.message,
           });

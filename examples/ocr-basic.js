@@ -5,7 +5,7 @@
  * to recognize text from images using Tesseract.js.
  */
 
-import { createAIProvider } from 'transformers-router';
+import { createAIProvider } from 'lxrt';
 
 async function main() {
   console.log('🚀 Initializing OCR Provider...');

@@ -7,7 +7,7 @@
  */
 
 import React, { useEffect } from 'react';
-import { useAIProvider, useChat } from 'transformers-router/react';
+import { useAIProvider, useChat } from 'lxrt/react';
 
 export function ChatApp() {
   const {

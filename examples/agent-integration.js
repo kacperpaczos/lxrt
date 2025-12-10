@@ -1,6 +1,6 @@
 /**
  * Agent Framework Integration Example
- * Shows how to use transformers-router as a local AI provider for agent frameworks
+ * Shows how to use lxrt as a local AI provider for agent frameworks
  */
 
 import { createAIProvider, OpenAIAdapter } from '../dist/index.js';

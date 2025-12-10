@@ -90,7 +90,7 @@ export class ModelManager {
     }
     if (scaledConfig !== config) {
       const logger = getConfig().logger;
-      logger.debug('[transformers-router] autoscale', {
+      logger.debug('[lxrt] autoscale', {
         modality,
         from: config,
         to: scaledConfig,
