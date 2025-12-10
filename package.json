@@ -1,8 +1,8 @@
 {
-  "name": "transformers-router",
-  "version": "1.0.0",
+  "name": "lxrt",
+  "version": "0.5.0",
   "description": "Local AI infrastructure for agent frameworks - Transformers.js wrapper with LLM, TTS, STT, Web Workers, React & Vue support",
-  "homepage": "https://github.com/kacperpaczos/transformers-router#readme",
+  "homepage": "https://github.com/kacperpaczos/lxrt#readme",
   "engines": {
     "node": ">=16.0.0"
   },
@@ -110,10 +110,7 @@
     "examples"
   ],
   "peerDependencies": {
-    "@huggingface/transformers": "^3.0.0",
-    "@tensorflow/tfjs-node": "^4.22.0",
-    "@tensorflow-models/speech-commands": "^0.5.4",
-    "@tensorflow-models/universal-sentence-encoder": "^1.3.3"
+    "@huggingface/transformers": "^3.0.0"
   },
   "devDependencies": {
     "@playwright/test": "^1.56.0",
@@ -145,10 +142,10 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/kacperpaczos/transformers-router"
+    "url": "https://github.com/kacperpaczos/lxrt"
   },
   "bugs": {
-    "url": "https://github.com/kacperpaczos/transformers-router/issues"
+    "url": "https://github.com/kacperpaczos/lxrt/issues"
   },
   "lint-staged": {
     "src/**/*.{ts,js}": [

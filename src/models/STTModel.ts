@@ -186,7 +186,7 @@ export class STTModel extends BaseModel<STTConfig> {
               ? 'cpu'
               : (dev as 'cpu' | 'gpu' | 'webgpu');
           const logger = getConfig().logger;
-          logger.debug('[transformers-router] load STT try', {
+          logger.debug('[lxrt] load STT try', {
             device: dev,
             dtype,
           });
@@ -208,7 +208,7 @@ export class STTModel extends BaseModel<STTConfig> {
           break;
         } catch (err) {
           const logger = getConfig().logger;
-          logger.debug('[transformers-router] load STT fallback', {
+          logger.debug('[lxrt] load STT fallback', {
             from: dev,
             error: (err as Error)?.message,
           });

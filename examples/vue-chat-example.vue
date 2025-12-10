@@ -69,7 +69,7 @@
 
 <script setup lang="ts">
 import { ref, watch, nextTick } from 'vue';
-import { useAIProvider, useChat } from 'transformers-router/vue';
+import { useAIProvider, useChat } from 'lxrt/vue';
 
 // Initialize AI Provider
 const {

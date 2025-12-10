@@ -218,7 +218,7 @@ export class LLMModel extends BaseModel<LLMConfig> {
               ? 'cpu'
               : (dev as 'cpu' | 'gpu' | 'webgpu');
           const logger = getConfig().logger;
-          logger.debug('[transformers-router] load LLM try', {
+          logger.debug('[lxrt] load LLM try', {
             device: dev,
             dtype,
           });
@@ -236,7 +236,7 @@ export class LLMModel extends BaseModel<LLMConfig> {
           break;
         } catch (err) {
           const logger = getConfig().logger;
-          logger.debug('[transformers-router] load LLM fallback', {
+          logger.debug('[lxrt] load LLM fallback', {
             from: dev,
             error: (err as Error)?.message,
           });

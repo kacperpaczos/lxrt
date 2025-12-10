@@ -5,7 +5,7 @@
  * This utility provides a centralized way to select the best backend
  * for AI operations based on system capabilities and performance.
  *
- * @author transformers-router
+ * @author lxrt
  * @version 1.0.0
  */
 

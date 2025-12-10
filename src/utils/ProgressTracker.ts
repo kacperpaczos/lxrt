@@ -5,7 +5,7 @@
  * This utility provides a centralized way to track progress of AI operations,
  * ensuring consistent progress reporting across all components.
  *
- * @author transformers-router
+ * @author lxrt
  * @version 1.0.0
  */
 

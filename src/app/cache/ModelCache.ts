@@ -5,7 +5,7 @@
  * This utility provides a centralized way to cache loaded models,
  * ensuring efficient memory usage and fast model retrieval.
  *
- * @author transformers-router
+ * @author lxrt
  * @version 1.0.0
  */
 

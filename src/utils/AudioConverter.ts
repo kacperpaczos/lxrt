@@ -5,7 +5,7 @@
  * This utility provides a centralized way to convert audio between different formats,
  * ensuring consistency across all AI models that handle audio data.
  *
- * @author transformers-router
+ * @author lxrt
  * @version 1.0.0
  */
 

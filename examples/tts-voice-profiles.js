@@ -5,7 +5,7 @@
  * It shows both predefined profiles and custom profile creation.
  */
 
-import { createAIProvider, voiceProfileRegistry } from 'transformers-router';
+import { createAIProvider, voiceProfileRegistry } from 'lxrt';
 
 async function voiceProfilesExample() {
   console.log('🎤 TTS Voice Profiles Example\n');

@@ -118,7 +118,7 @@ export class LangChainLLM {
    * Get LLM type
    */
   get llmType(): string {
-    return 'transformers-router';
+    return 'lxrt';
   }
 }
 
