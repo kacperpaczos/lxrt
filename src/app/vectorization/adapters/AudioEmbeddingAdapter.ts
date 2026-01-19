@@ -11,7 +11,7 @@ export class AudioEmbeddingAdapter implements EmbeddingAdapter {
   // Pipeline is typed loosely due to Transformers.js complex overloads
   private pipeline:
     | ((
-        input: Float32Array,
+        input: Float32Array | string,
         options?: Record<string, unknown>
       ) => Promise<CLAPPipelineOutput>)
     | null = null;
@@ -90,12 +90,17 @@ export class AudioEmbeddingAdapter implements EmbeddingAdapter {
     }
   }
 
-  async processText(_text: string): Promise<Float32Array> {
+  async processText(text: string): Promise<Float32Array> {
     await this.ensureInitialized();
 
-    // For audio adapter, we might want to use text-to-audio embeddings
-    // This would require a text encoder or a separate text-to-audio model
-    throw new Error('Text processing not implemented for audio adapter');
+    try {
+      // CLAP supports text inputs for text-audio retrieval
+      const output = await this.pipeline!(text);
+      return this.extractEmbedding(output);
+    } catch (error) {
+      // If model doesn't support text, we might want to throw or return dummy
+      throw new Error(`Audio adapter text processing failed: ${error}`);
+    }
   }
 
   async dispose(): Promise<void> {

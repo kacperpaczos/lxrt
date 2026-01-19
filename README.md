@@ -1,105 +1,294 @@
 <div align="center">
 
-# LXRT — Local AI Router & Toolkit
+# LXRT — Lokalna Infrastruktura AI
 
-`local ai` · `transformers.js` · `llm` · `tts/stt` · `embeddings` · `ocr` · `vectorization` · `web workers`
+`transformers.js` · `llm` · `tts/stt` · `embeddings` · `ocr` · `vectorization` · `web-workers`
+
+[![npm version](https://img.shields.io/npm/v/lxrt.svg)](https://www.npmjs.com/package/lxrt)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.0-blue.svg)](https://www.typescriptlang.org/)
+
+**Biblioteka TypeScript do uruchamiania modeli AI w jednolitej infrastrukturze**
 
 </div>
 
-## Why LXRT?
-- Local-first: privacy, lower cost, lower latency.
-- One infra layer: models, cache, workers, backend selection (WebGPU/WASM/Node), progress, vector store.
-- Ready integrations: OpenAI-compatible, LangChain, React/Vue hooks.
-- Multimodal: LLM, TTS, STT, Embeddings, OCR, audio/video/image vectorization for RAG.
-- TypeScript-first: full typings, clear API.
+---
 
-## Install
+## Dlaczego LXRT?
+
+| Cecha | Opis |
+|-------|------|
+| 🔒 **Local-first** | Prywatność, niższe koszty, niższe opóźnienia |
+| 🎯 **Jedna warstwa infrastruktury** | Modele, cache, workery, backend (WebGPU/WASM/Node), progress, vector store |
+| 🔌 **Gotowe integracje** | OpenAI-compatible, LangChain, React/Vue hooks |
+| 🎭 **Multi-modalne** | LLM, TTS, STT, Embeddings, OCR, audio/video/image vectorization dla RAG |
+| 📝 **TypeScript-first** | Pełne typowanie, czyste API |
+
+---
+
+## Instalacja
+
 ```bash
 npm install lxrt @huggingface/transformers
-# or yarn/pnpm equivalents
+# lub yarn / pnpm
 ```
 
-## Quick start (LLM + cache + worker)
-```ts
+---
+
+## Szybki Start
+
+### Podstawowy chat z LLM
+
+```typescript
 import { createAIProvider } from 'lxrt';
 
 const provider = createAIProvider({
-  llm: { model: 'onnx-community/Qwen2.5-0.5B-Instruct', dtype: 'q4' },
+  llm: {
+    model: 'onnx-community/Qwen2.5-0.5B-Instruct',
+    dtype: 'q4',
+  },
   backend: { prefer: 'webgpu', fallback: 'wasm' },
 });
 
 const reply = await provider.chat([
-  { role: 'user', content: 'Hello, LXRT!' }
+  { role: 'user', content: 'Cześć, LXRT!' }
 ]);
-console.log(reply);
+console.log(reply.content);
 ```
 
-## Key capabilities
-- **LLM / Chat**: local models, backend autoscaling, model cache.
-- **TTS / STT / OCR**: text↔speech, speech recognition, OCR with workers and progress events.
-- **Embeddings & Vectorization**: text, audio, image, video → vectors for RAG; local vector store (IndexedDB).
-- **OpenAI-compatible & LangChain**: drop-in for existing clients.
-- **React / Vue**: hooks/composables `useAIProvider`, `useChat`, `useVectorization`.
-- **Workers + Progress**: heavy work off the main thread, progress events.
+### Multi-modalna konfiguracja
 
-## Examples
-
-### Embeddings (text)
-```ts
-const vec = await provider.embed(['hello world']);
+```typescript
+const provider = createAIProvider({
+  llm: { model: 'onnx-community/Qwen2.5-0.5B-Instruct', dtype: 'q4' },
+  tts: { model: 'Xenova/speecht5_tts', dtype: 'fp32' },
+  stt: { model: 'Xenova/whisper-tiny', dtype: 'fp32', language: 'pl' },
+  embedding: { model: 'Xenova/all-MiniLM-L6-v2', dtype: 'fp32' },
+  ocr: { language: ['pol', 'eng'] },
+});
 ```
 
-### Vectorization (file)
-```ts
-const result = await provider.vectorize(file, { modality: 'audio' });
-console.log(result.vector, result.metadata);
+---
+
+## Kluczowe Możliwości
+
+### 💬 LLM / Chat
+
+```typescript
+// Chat z historią
+const response = await provider.chat([
+  { role: 'system', content: 'Jesteś pomocnym asystentem.' },
+  { role: 'user', content: 'Czym jest TypeScript?' },
+]);
+
+// Streaming
+for await (const token of provider.stream('Opowiedz historię')) {
+  process.stdout.write(token);
+}
 ```
+
+### 🔊 TTS (Text-to-Speech)
+
+```typescript
+const audio = await provider.speak('Witaj świecie!', {
+  voiceProfile: 'professional-female',
+});
+```
+
+### 🎤 STT (Speech-to-Text)
+
+```typescript
+const text = await provider.listen(audioBlob, {
+  language: 'pl',
+});
+```
+
+### 📸 OCR
+
+```typescript
+const result = await provider.recognize(imageFile, {
+  language: ['pol', 'eng'],
+  autoLanguage: true,
+});
+console.log(result.text);
+```
+
+### 🧮 Embeddingi i Wyszukiwanie Semantyczne
+
+```typescript
+// Embeddingi
+const vectors = await provider.embed(['tekst 1', 'tekst 2']);
+
+// Podobieństwo
+const score = await provider.similarity('Kocham programowanie', 'Uwielbiam kodować');
+
+// Wyszukiwanie
+const result = await provider.findSimilar('Kot na macie', dokumenty);
+```
+
+### 📊 Wektoryzacja (RAG)
+
+```typescript
+await provider.initializeVectorization({ storage: 'indexeddb' });
+await provider.indexFiles([file1, file2]);
+const results = await provider.queryVectors('Jak działa AI?');
+```
+
+---
+
+## Adaptery
 
 ### OpenAI-compatible
-```ts
+
+```typescript
 import { OpenAIAdapter } from 'lxrt';
 
 const client = new OpenAIAdapter(provider);
 const resp = await client.chat.completions.create({
   model: 'local-llm',
-  messages: [{ role: 'user', content: 'Hi!' }],
+  messages: [{ role: 'user', content: 'Cześć!' }],
 });
 ```
 
 ### LangChain
-```ts
+
+```typescript
 import { createLangChainLLM } from 'lxrt';
 
 const llm = createLangChainLLM(provider);
-const res = await llm.invoke('Tell me a joke about cats');
+const res = await llm.invoke('Opowiedz żart o kotach');
 ```
 
-### React (hook)
+---
+
+## React / Vue
+
+### React Hook
+
 ```tsx
 import { useChat } from 'lxrt/react';
-const { messages, sendMessage, isLoading } = useChat();
 
-await sendMessage('Hi LXRT!');
+function Chat() {
+  const { messages, sendMessage, isLoading } = useChat();
+  
+  return (
+    <div>
+      {messages.map((m, i) => <div key={i}>{m.content}</div>)}
+      <button onClick={() => sendMessage('Cześć!')}>Wyślij</button>
+    </div>
+  );
+}
 ```
 
-### Vue (composable)
-```ts
+### Vue Composable
+
+```typescript
 import { useChat } from 'lxrt/vue';
+
 const { messages, sendMessage, isLoading } = useChat();
+await sendMessage('Cześć!');
 ```
 
-## Model download & progress
-```ts
-provider.on('progress', ({ file, progress }) => {
-  console.log(`Downloading ${file}: ${progress}%`);
+---
+
+## Postęp Ładowania
+
+```typescript
+provider.on('progress', ({ modality, file, progress }) => {
+  console.log(`Ładowanie ${modality}: ${file} (${progress}%)`);
+});
+
+provider.on('ready', ({ modality }) => {
+  console.log(`✓ ${modality} gotowy`);
 });
 ```
 
-## Configuration (quick view)
-- **Backend**: `webgpu` / `wasm` / `node` (auto-fallback).
-- **Cache**: automatic storage and reuse of models.
-- **Workers**: all heavy computation in Web Workers; UI stays responsive.
-- **Vector Store**: local IndexedDB for RAG/semantic search.
+---
 
-## License
-MIT
+## Konfiguracja
+
+| Opcja | Wartości | Opis |
+|-------|----------|------|
+| **Backend** | `webgpu` / `wasm` / `node` | Auto-fallback |
+| **DType** | `fp32` / `fp16` / `q8` / `q4` / `q4f16` | Precyzja modelu |
+| **Cache** | Automatyczny | Przechowywanie i ponowne użycie modeli |
+| **Workers** | Web Workers | Ciężkie obliczenia poza main thread |
+| **Vector Store** | IndexedDB | Lokalne przechowywanie dla RAG |
+
+---
+
+## Architektura
+
+```
+┌─────────────────────────────────────────────────────┐
+│                    AIProvider                        │
+│  (fasada główna - chat/speak/listen/embed/ocr)      │
+├──────────────┬──────────────┬───────────────────────┤
+│   Models     │   Services   │    Infrastructure     │
+├──────────────┼──────────────┼───────────────────────┤
+│ LLMModel     │ ModelManager │ BackendSelector       │
+│ TTSModel     │ ModelCache   │ WorkerPool            │
+│ STTModel     │ Vectorize-   │ VectorStore (IDB)     │
+│ EmbeddingM.  │ tionService  │ EventEmitter          │
+│ OCRModel     │              │                       │
+└──────────────┴──────────────┴───────────────────────┘
+        │                              │
+        ▼                              ▼
+   Transformers.js              Tesseract.js
+```
+
+Szczegółowy opis: [ARCHITECTURE.md](./ARCHITECTURE.md)
+
+---
+
+## Dokumentacja
+
+| Dokument | Opis |
+|----------|------|
+| [API.md](./API.md) | Pełna dokumentacja API |
+| [ARCHITECTURE.md](./ARCHITECTURE.md) | Architektura i relacje między komponentami |
+| [EXAMPLES.md](./EXAMPLES.md) | Przykłady użycia |
+
+---
+
+## Przykłady
+
+Katalog [`examples/`](./examples/) zawiera:
+
+- `basic.js` - Podstawowe użycie
+- `multimodal.js` - LLM + TTS + STT + Embeddings
+- `agent-integration.js` - Integracja z agentami AI
+- `ocr-basic.js` - Rozpoznawanie tekstu OCR
+- `tts-voice-profiles.js` - Profile głosowe TTS
+- `react-chat-example.tsx` - Hook React
+- `vue-chat-example.vue` - Composable Vue
+- `worker-chat.html` - Web Workers
+
+---
+
+## Wymagania
+
+- Node.js >= 24.13.0
+- Przeglądarka z WebGPU (opcjonalnie, fallback do WASM)
+
+### Peer Dependencies
+
+```json
+{
+  "@huggingface/transformers": "^3.0.0"
+}
+```
+
+---
+
+## Licencja
+
+MIT © [Kacper Paczos](https://github.com/kacperpaczos)
+
+---
+
+## Linki
+
+- [GitHub](https://github.com/kacperpaczos/lxrt)
+- [npm](https://www.npmjs.com/package/lxrt)
+- [Zgłoś problem](https://github.com/kacperpaczos/lxrt/issues)
