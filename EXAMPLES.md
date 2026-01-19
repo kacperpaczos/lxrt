@@ -18,6 +18,7 @@ Kompletny zbiór przykładów użycia biblioteki LXRT od podstaw do zaawansowany
 10. [Vue Composables](#vue-composables)
 11. [Web Workers](#web-workers)
 12. [Integracja z Agentami](#integracja-z-agentami)
+13. [Integracja ze Stagehand](#integracja-ze-stagehand)
 
 ---
 
@@ -622,6 +623,49 @@ const ragAgent = new RAGAgent(provider, [
 ]);
 
 const answer = await ragAgent.ask('Jak uruchomić model AI lokalnie?');
+```
+
+---
+
+
+---
+
+## Integracja ze Stagehand
+
+### Uruchomienie Stagehand z lokalnym modelem
+
+Przykład pokazuje jak użyć LXRT jako dostawcy LLM dla frameworku [Stagehand](https://github.com/browserbase/stagehand), umożliwiając w pełni lokalną automatyzację przeglądarki.
+
+Pełny kod źródłowy znajduje się w `examples/stagehand/`. Szczegółowy opis architektury i możliwości znajdziesz w [dokumentacji integracji](docs/stagehand/INTEGRATION_GUIDE.md).
+
+```typescript
+import { Stagehand } from '@browserbasehq/stagehand';
+import { createAIProvider } from 'lxrt';
+import { LxrtLLMProvider } from './LxrtLLMProvider'; // Twój adapter
+import { z } from 'zod';
+
+// 1. Inicjalizacja LXRT
+const provider = createAIProvider({
+  llm: { model: 'Xenova/Qwen1.5-0.5B-Chat', dtype: 'q4' }
+});
+await provider.warmup('llm');
+
+// 2. Konfiguracja Stagehand z lokalnym klientem
+const stagehand = new Stagehand({
+  env: "LOCAL" as any,
+  llmClient: new LxrtLLMProvider(provider)
+});
+
+// 3. Automatyzacja
+await stagehand.init();
+await (stagehand as any).page.goto("https://example.com");
+
+const data = await stagehand.extract(
+  "Extract the title",
+  z.object({ title: z.string() })
+);
+console.log(data);
+await stagehand.close();
 ```
 
 ---
