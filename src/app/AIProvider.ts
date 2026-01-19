@@ -370,7 +370,44 @@ export class AIProvider {
   async initializeVectorization(
     config: VectorizationServiceConfig
   ): Promise<void> {
-    this.vectorizationService = new VectorizationService(config);
+    let embeddingModel: EmbeddingModel | undefined;
+
+    // If embedding is configured in AIProvider, try to use it
+    if (this.config.embedding) {
+      try {
+        // Get the model instance (it might trigger load later, or we can ensure it's created)
+        // createModelInstance creates it but doesn't load/cache it if not used.
+        // getOrLoadModel loads it.
+        // We want to pass the instance.
+
+        // Use createModelInstance to get the instance without forced loading (lazy load in adapter)
+        // But we need to ensure it's the SAME instance if it's already used.
+        // ModelManager doesn't expose `getOrCreateModel`.
+
+        // If we use getOrLoadModel, we force load now. That's probably fine for vectorization init.
+        // Or we can use `getModel` if already loaded, or use internal access if possible.
+        // But `ModelManager` is strict.
+
+        // Let's use getOrLoadModel to ensure it's ready, as vectorization usually implies immediate usage.
+        // Or we can catch error if it fails to load now.
+
+        const model = await this.modelManager.getOrLoadModel(
+          'embedding',
+          this.config.embedding
+        );
+        embeddingModel = model as EmbeddingModel;
+      } catch (error) {
+        console.warn(
+          'Failed to load embedding model for vectorization service:',
+          error
+        );
+      }
+    }
+
+    this.vectorizationService = new VectorizationService(
+      config,
+      embeddingModel
+    );
     await this.vectorizationService.initialize();
   }
 

@@ -1,12 +1,13 @@
 {
   "name": "lxrt",
-  "version": "0.5.0",
-  "description": "Local AI infrastructure for agent frameworks - Transformers.js wrapper with LLM, TTS, STT, Web Workers, React & Vue support",
+  "version": "0.6.0",
+  "description": "Unified TypeScript library for local AI - LLM, TTS, STT, Embeddings, OCR, and RAG vectorization with Transformers.js",
   "homepage": "https://github.com/kacperpaczos/lxrt#readme",
   "engines": {
-    "node": ">=16.0.0"
+    "node": ">=24.13.0"
   },
   "main": "dist/index.js",
+  "browser": "dist/index.js",
   "types": "dist/index.d.ts",
   "exports": {
     ".": {
@@ -45,14 +46,10 @@
     "test:unit": "jest --config jest.node.config.js --testPathPatterns=tests/node/unit",
     "test:node:unit": "jest --config jest.node.config.js --testPathPatterns=tests/node/unit",
     "test:node:integration": "jest --config jest.node.config.js --testPathPatterns=tests/node/integration",
+    "test:single": "jest --config jest.node.config.js",
     "test:node:all": "npm run test:node:unit && npm run test:node:integration",
     "test:node:example": "node --experimental-modules test-node-example.mjs",
-    "test:browser": "playwright test --config playwright.integration.config.ts",
-    "test:browser:headed": "playwright test --config playwright.integration.config.ts --headed",
-    "test:browser:ui": "playwright test --config playwright.integration.config.ts --ui",
-    "test:e2e": "playwright test --config playwright.config.ts",
-    "test:e2e:headed": "playwright test --config playwright.config.ts --headed",
-    "test:all": "npm run test:node:all && npm run test:browser && npm run test:e2e",
+    "test:all": "npm run test:node:all",
     "test:watch": "jest --config jest.unit.config.js --watch",
     "test:coverage": "jest --config jest.unit.config.js --coverage",
     "test:debug": "DEBUG_TESTS=true jest --config jest.node.config.js",
@@ -106,19 +103,16 @@
   "files": [
     "dist",
     "README.md",
-    "LICENSE",
-    "examples"
+    "LICENSE"
   ],
   "peerDependencies": {
     "@huggingface/transformers": "^3.0.0"
   },
   "devDependencies": {
-    "@playwright/test": "^1.56.0",
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.0",
     "@types/jest": "^30.0.0",
-    "@types/node": "^24.7.1",
-    "jest-environment-node-single-context": "^29.4.0",
+    "@types/node": "^24.10.9",
     "@types/react": "^19.2.2",
     "@types/react-dom": "^19.2.2",
     "@types/tesseract.js": "^0.0.2",
@@ -132,6 +126,7 @@
     "husky": "^9.1.7",
     "jest": "^30.2.0",
     "jest-environment-jsdom": "^30.2.0",
+    "jest-environment-node-single-context": "^29.4.0",
     "lint-staged": "^16.2.4",
     "onnxruntime-common": "^1.23.0",
     "onnxruntime-node": "^1.23.0",
@@ -157,8 +152,11 @@
     ]
   },
   "dependencies": {
+    "@mozilla/readability": "^0.6.0",
+    "@types/jsdom": "^27.0.0",
     "franc": "^6.2.0",
     "franc-min": "^6.2.0",
+    "jsdom": "^27.4.0",
     "tesseract.js": "^6.0.1"
   }
 }

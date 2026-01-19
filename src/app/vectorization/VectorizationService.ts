@@ -19,11 +19,15 @@ import { LocalResourceUsageEstimator } from '../../infra/resource/LocalResourceU
 import { AudioEmbeddingAdapter } from './adapters/AudioEmbeddingAdapter';
 import { ImageEmbeddingAdapter } from './adapters/ImageEmbeddingAdapter';
 import { VideoAsAudioAdapter } from './adapters/VideoAsAudioAdapter';
+import { TextEmbeddingAdapter } from './adapters/TextEmbeddingAdapter';
 import { ExternalEmbeddingBackendMock } from '../backend/external/ExternalEmbeddingBackendMock';
 import type { VectorStore } from '../../infra/vectorstore/VectorStore';
 import type { ResourceUsageEstimator } from '../../infra/resource/ResourceUsageEstimator';
 import type { EmbeddingAdapter } from './adapters/EmbeddingAdapter';
 import { ProgressTracker } from '../../utils/ProgressTracker';
+import { EmbeddingModel } from '../../models/EmbeddingModel';
+import { JSDOM } from 'jsdom';
+import { Readability } from '@mozilla/readability';
 
 export interface VectorizationResult {
   indexed: string[];
@@ -45,9 +49,14 @@ export class VectorizationService {
   private externalMock?: ExternalEmbeddingBackendMock;
   private eventListeners: Map<string, Set<(data: unknown) => void>> = new Map();
   private progressTracker: ProgressTracker;
+  private embeddingModel?: EmbeddingModel;
 
-  constructor(config: VectorizationServiceConfig) {
+  constructor(
+    config: VectorizationServiceConfig,
+    embeddingModel?: EmbeddingModel
+  ) {
     this.config = config;
+    this.embeddingModel = embeddingModel;
     this.vectorStore = new LocalVectorStoreIndexedDB();
     this.resourceEstimator = new LocalResourceUsageEstimator(
       config.quotaThresholds || { warn: 0.7, high: 0.85, critical: 0.95 }
@@ -582,11 +591,15 @@ export class VectorizationService {
 
   private async initializeAdapters(): Promise<void> {
     // Initialize all adapters
-    const adapters = [
+    const adapters: EmbeddingAdapter[] = [
       new AudioEmbeddingAdapter(),
       new ImageEmbeddingAdapter(),
       new VideoAsAudioAdapter(),
     ];
+
+    if (this.embeddingModel) {
+      adapters.push(new TextEmbeddingAdapter(this.embeddingModel));
+    }
 
     for (const adapter of adapters) {
       await adapter.initialize();
@@ -643,10 +656,24 @@ export class VectorizationService {
     }
   }
 
-  private async extractFromUrl(_url: string): Promise<string> {
-    // TODO: Implement URL extraction with Readability
-    // This would use fetch + @mozilla/readability + DOMPurify
-    throw new Error('URL extraction not implemented yet');
+  private async extractFromUrl(url: string): Promise<string> {
+    try {
+      const response = await fetch(url);
+      if (!response.ok) {
+        throw new Error(
+          `Failed to fetch URL: ${response.status} ${response.statusText}`
+        );
+      }
+      const html = await response.text();
+      const dom = new JSDOM(html, { url });
+      const reader = new Readability(
+        dom.window.document as unknown as Document
+      );
+      const article = reader.parse();
+      return article?.textContent || '';
+    } catch (error) {
+      throw new Error(`Failed to extract content from URL ${url}: ${error}`);
+    }
   }
 
   private async extractFromFile(
@@ -691,43 +718,101 @@ export class VectorizationService {
     _modality: VectorModality,
     jobId: string
   ): Promise<Float32Array[]> {
-    // TODO: Implement embedding with Transformers.js adapters
     const embeddings: Float32Array[] = [];
 
-    for (let i = 0; i < chunks.length; i++) {
-      // Update progress for each chunk
-      this.progressTracker.updateProgress(jobId, (i + 1) / chunks.length, {
-        itemsProcessed: i + 1,
-        message: `Embedding chunk ${i + 1}/${chunks.length}`,
+    // Use EmbeddingModel if available
+    if (this.embeddingModel) {
+      // Ensure model is loaded (load() handles check internally)
+      await this.embeddingModel.load((progress: { progress?: number }) => {
+        this.progressTracker.updateProgress(jobId, -1, {
+          message: `Loading model: ${progress.progress}%`,
+        });
       });
 
-      // For now, return dummy embeddings
-      const dummyEmbedding = new Float32Array(384); // 384 dimensions for MiniLM
-      dummyEmbedding.fill((0.1 * (i + 1)) / chunks.length);
-      embeddings.push(dummyEmbedding);
+      // Process in batches to update progress
+      const batchSize = 4;
+      for (let i = 0; i < chunks.length; i += batchSize) {
+        const batch = chunks.slice(i, i + batchSize);
+
+        // Update progress
+        this.progressTracker.updateProgress(jobId, (i + 1) / chunks.length, {
+          itemsProcessed: i + 1,
+          message: `Embedding chunk ${i + 1}/${chunks.length}`,
+        });
+
+        try {
+          const batchEmbeddings = await this.embeddingModel.embed(batch, {
+            pooling: 'mean',
+            normalize: true,
+          });
+
+          batchEmbeddings.forEach((emb: number[]) =>
+            embeddings.push(new Float32Array(emb))
+          );
+        } catch (error) {
+          throw new Error(`Failed to embed batch: ${error}`);
+        }
+      }
+    } else {
+      // Fallback to dummy embeddings if model is missing (for tests or mocked env)
+      for (let i = 0; i < chunks.length; i++) {
+        this.progressTracker.updateProgress(jobId, (i + 1) / chunks.length, {
+          itemsProcessed: i + 1,
+          message: `Embedding chunk ${i + 1}/${chunks.length} (Mock)`,
+        });
+
+        const dummyEmbedding = new Float32Array(384);
+        dummyEmbedding.fill((0.1 * (i + 1)) / chunks.length);
+        embeddings.push(dummyEmbedding);
+      }
     }
 
     return embeddings;
   }
 
   private async embedText(
-    _text: string,
+    text: string,
     _modality: VectorModality
   ): Promise<Float32Array> {
-    // TODO: Implement text embedding
+    if (this.embeddingModel) {
+      await this.embeddingModel.load();
+      const result = await this.embeddingModel.embed(text);
+      return new Float32Array(result[0]);
+    }
+
+    // Fallback
     const embedding = new Float32Array(384);
     embedding.fill(0.5);
     return embedding;
   }
 
   private async embedFile(
-    _file: File | ArrayBuffer,
-    _modality: VectorModality
+    file: File | ArrayBuffer,
+    modality: VectorModality
   ): Promise<Float32Array> {
-    // TODO: Implement file embedding
-    const embedding = new Float32Array(384);
-    embedding.fill(0.7);
-    return embedding;
+    // For file embedding, use the appropriate adapter
+    const adapter = this.getAdapter(modality);
+    if (!adapter) {
+      // Fallback or error
+      if (this.embeddingModel && modality === 'text' && file instanceof File) {
+        const text = await file.text();
+        const result = await this.embeddingModel.embed(text);
+        return new Float32Array(result[0]);
+      }
+
+      const embedding = new Float32Array(384);
+      embedding.fill(0.7);
+      return embedding;
+    }
+
+    if (file instanceof File) {
+      const result = await adapter.process(file);
+      return result.vector;
+    } else {
+      throw new Error(
+        'ArrayBuffer embedding not fully supported without file context'
+      );
+    }
   }
 
   private async upsertEmbeddings(

@@ -16,7 +16,7 @@ module.exports = {
     '^@ui/(.*)$': '<rootDir>/src/ui/$1',
   },
   transform: {
-    '^.+\\.ts$': ['ts-jest', {
+    '^.+\\.(ts|js|mjs)$': ['ts-jest', {
       useESM: false,
       skipLibCheck: true,
       noEmit: true,
@@ -31,10 +31,8 @@ module.exports = {
     }]
   },
   transformIgnorePatterns: [
-    'node_modules/(?!(.*\\.mjs$|onnxruntime-node|@xenova))'
+    'node_modules/(?!(.*\\.mjs$|onnxruntime-node|@xenova|@exodus|html-encoding-sniffer|jsdom|@mozilla/readability|parse5))'
   ],
   // Stabilizacja wyjścia procesów testowych
   forceExit: true
 };
-
-
