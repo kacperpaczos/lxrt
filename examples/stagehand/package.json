@@ -1,0 +1,29 @@
+{
+  "name": "stagehand",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "build": "tsc",
+    "start": "node --experimental-specifier-resolution=node dist/index.js",
+    "dev": "ts-node src/index.ts",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "@browserbasehq/stagehand": "^3.0.7",
+    "dotenv": "^16.4.5",
+    "lxrt": "file:../..",
+    "playwright": "^1.57.0",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.9.3",
+    "zod": "^4.3.5"
+  },
+  "devDependencies": {
+    "@types/node": "^25.0.9",
+    "zod-to-json-schema": "^3.25.1"
+  }
+}
