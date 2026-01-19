@@ -40,6 +40,22 @@ export interface QueryResult {
   metadata?: VectorDocMeta[];
 }
 
+/**
+ * VectorizationService - Main facade for multimodal embeddings.
+ *
+ * Provides a unified interface for vectorizing text, audio, images, and video
+ * content. Supports chunking, progress tracking, and vector storage.
+ *
+ * @example
+ * ```typescript
+ * const service = new VectorizationService(config, embeddingModel);
+ * await service.initialize();
+ *
+ * for await (const progress of service.vectorizeWithProgress(file)) {
+ *   console.log(`Stage: ${progress.stage}, Progress: ${progress.progress}`);
+ * }
+ * ```
+ */
 export class VectorizationService {
   private config: VectorizationServiceConfig;
   private initialized = false;
@@ -51,6 +67,12 @@ export class VectorizationService {
   private progressTracker: ProgressTracker;
   private embeddingModel?: EmbeddingModel;
 
+  /**
+   * Creates a new VectorizationService instance.
+   *
+   * @param config - Service configuration including storage type and thresholds
+   * @param embeddingModel - Optional pre-configured EmbeddingModel instance
+   */
   constructor(
     config: VectorizationServiceConfig,
     embeddingModel?: EmbeddingModel
@@ -70,7 +92,12 @@ export class VectorizationService {
   }
 
   /**
-   * Initialize the service and all dependencies
+   * Initialize the service and all dependencies.
+   *
+   * Must be called before using any vectorization methods.
+   * Initializes vector store, resource estimator, and modality adapters.
+   *
+   * @throws Error if initialization fails
    */
   async initialize(): Promise<void> {
     if (this.initialized) {
@@ -101,7 +128,22 @@ export class VectorizationService {
   }
 
   /**
-   * Vectorize input with detailed progress tracking
+   * Vectorize input with detailed progress tracking.
+   *
+   * Processes input through extraction, sanitization, chunking, embedding,
+   * and storage stages. Yields progress events at each stage.
+   *
+   * @param input - File, URL string, or ArrayBuffer to vectorize
+   * @param options - Vectorization options including modality and chunking settings
+   * @yields Progress events with stage information and completion percentage
+   * @returns Final result with indexed and failed document IDs
+   *
+   * @example
+   * ```typescript
+   * for await (const progress of service.vectorizeWithProgress(file, { modality: 'text' })) {
+   *   updateProgressBar(progress.progress);
+   * }
+   * ```
    */
   async *vectorizeWithProgress(
     input: File | string | ArrayBuffer,

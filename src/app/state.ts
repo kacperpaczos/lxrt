@@ -1,13 +1,18 @@
 import type { RuntimeConfig } from '@domain/config/Config';
 import type { ModelConfig } from '../core/types';
 import { InitializationError } from '@domain/errors';
+import { defaultLogger } from '@domain/logging/defaultLogger';
 
 let runtimeConfig: RuntimeConfig | null = null;
 let initialized = false;
 let registeredModels: Map<string, ModelConfig> = new Map();
 
 export function setConfig(config: RuntimeConfig): void {
-  runtimeConfig = config;
+  // Ensure logger is always present
+  runtimeConfig = {
+    ...config,
+    logger: config.logger ?? defaultLogger,
+  };
 }
 
 export function getConfig(): RuntimeConfig {

@@ -27,16 +27,49 @@ async function getTransformers() {
   return transformersModule;
 }
 
+/**
+ * EmbeddingModel - Core model for generating text embeddings.
+ *
+ * Wraps Hugging Face Transformers.js pipeline for semantic embeddings.
+ * Supports automatic device selection (WebGPU, WASM, CPU) with fallback.
+ *
+ * @example
+ * ```typescript
+ * const model = new EmbeddingModel({ model: 'Xenova/all-MiniLM-L6-v2' });
+ * await model.load();
+ * const embedding = await model.embed('Hello world');
+ * console.log(embedding.length); // 384
+ * ```
+ */
 export class EmbeddingModel extends BaseModel<EmbeddingConfig> {
   private backendSelector?: BackendSelector;
 
+  /**
+   * Creates a new EmbeddingModel instance.
+   *
+   * @param config - Model configuration including model name and device preferences
+   * @param backendSelector - Optional BackendSelector for device fallback logic
+   */
   constructor(config: EmbeddingConfig, backendSelector?: BackendSelector) {
     super('embedding', config);
     this.backendSelector = backendSelector;
   }
 
   /**
-   * Load the embedding model
+   * Load the embedding model from Hugging Face Hub.
+   *
+   * Downloads model weights (if not cached) and initializes the pipeline.
+   * Automatically selects the best available device with fallback.
+   *
+   * @param progressCallback - Optional callback for download/load progress
+   * @throws ModelLoadError if model loading fails on all devices
+   *
+   * @example
+   * ```typescript
+   * await model.load((progress) => {
+   *   console.log(`${progress.status}: ${progress.progress}%`);
+   * });
+   * ```
    */
   async load(
     progressCallback?: (progress: {

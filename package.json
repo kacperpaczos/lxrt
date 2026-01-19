@@ -50,6 +50,7 @@
     "test:node:all": "npm run test:node:unit && npm run test:node:integration",
     "test:node:example": "node --experimental-modules test-node-example.mjs",
     "test:all": "npm run test:node:all",
+    "test:examples": "node --check examples/*.js && echo '✅ All examples syntax OK'",
     "test:watch": "jest --config jest.unit.config.js --watch",
     "test:coverage": "jest --config jest.unit.config.js --coverage",
     "test:debug": "DEBUG_TESTS=true jest --config jest.node.config.js",
