@@ -52,7 +52,7 @@
     "test:all": "npm run test:node:all",
     "test:examples": "node --check examples/*.js && echo '✅ All examples syntax OK'",
     "test:watch": "jest --config jest.unit.config.js --watch",
-    "test:coverage": "jest --config jest.unit.config.js --coverage",
+    "test:coverage": "jest --config jest.coverage.config.js",
     "test:debug": "DEBUG_TESTS=true jest --config jest.node.config.js",
     "test:llm": "jest --config jest.node.config.js --testPathPattern=\"llm\"",
     "test:stt": "jest --config jest.node.config.js --testPathPattern=\"stt\"",
