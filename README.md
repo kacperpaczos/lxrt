@@ -268,7 +268,7 @@ Katalog [`examples/`](./examples/) zawiera:
 
 ## Wymagania
 
-- Node.js >= 16.0.0
+- Node.js >= 24.13.0
 - Przeglądarka z WebGPU (opcjonalnie, fallback do WASM)
 
 ### Peer Dependencies
