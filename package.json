@@ -41,7 +41,7 @@
     }
   },
   "scripts": {
-    "build": "tsc",
+    "build": "tsc && tsc-alias",
     "test": "jest --config jest.node.config.js",
     "test:unit": "jest --config jest.node.config.js --testPathPatterns=tests/node/unit",
     "test:node:unit": "jest --config jest.node.config.js --testPathPatterns=tests/node/unit",
@@ -130,9 +130,9 @@
     "jest-environment-node-single-context": "^29.4.0",
     "lint-staged": "^16.2.4",
     "onnxruntime-common": "^1.23.0",
-    "onnxruntime-node": "^1.23.0",
     "prettier": "^3.6.2",
     "ts-jest": "^29.4.5",
+    "tsc-alias": "^1.8.16",
     "typescript": "^5.9.3",
     "vue": "^3.5.22"
   },
