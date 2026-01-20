@@ -1,6 +1,6 @@
 import { Stagehand } from '@browserbasehq/stagehand';
 import { z } from 'zod';
-import { createAIProvider } from 'lxrt';
+import { init, createAIProvider } from 'lxrt';
 import { LxrtLLMProvider } from './LxrtLLMProvider.js';
 import dotenv from 'dotenv';
 import path from 'path';
@@ -10,6 +10,9 @@ dotenv.config();
 
 async function main() {
     console.log("🚀 Initializing LXRT...");
+
+    // Initialize LXRT library first
+    await init();
 
     // 1. Initialize LXRT AI Provider
     const provider = createAIProvider({
@@ -27,16 +30,23 @@ async function main() {
     // 2. Initialize Stagehand with custom LLM client
     console.log("🚀 Initializing Stagehand...");
     const stagehand = new Stagehand({
-        env: "LOCAL" as any, // or 'local' depending on precise type
-        llmClient: new LxrtLLMProvider(provider)
+        env: "LOCAL",
+        llmClient: new LxrtLLMProvider(provider),
+        localBrowserLaunchOptions: {
+            headless: false, // Widoczna przeglądarka dla weryfikacji!
+            viewport: { width: 1280, height: 720 }
+        },
+        verbose: 1 // Szczegółowe logi
     });
 
     await stagehand.init();
 
+    // Get page reference for V3 API
+    const page = stagehand.context.pages()[0];
 
     try {
         console.log("🌐 Navigating to example.com...");
-        await (stagehand as any).page.goto("https://example.com");
+        await page.goto("https://example.com");
 
         console.log("👀 Extracting data...");
         const data = await stagehand.extract(
