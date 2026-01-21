@@ -11,10 +11,10 @@ async function main() {
     // 1. Inicjalizacja biblioteki LXRT
     await init();
 
-    // 2. Utworzenie providera AI
+    // 2. Utworzenie providera AI - MAŁY MODEL DLA SZYBKOŚCI
     const provider = createAIProvider({
         llm: {
-            model: 'Xenova/Phi-3-mini-4k-instruct', // Mocniejszy model (3.8B)
+            model: 'Xenova/Qwen1.5-0.5B-Chat', // Mały model (~0.5B) dla szybkiej odpowiedzi
             dtype: 'q4',
             device: 'cpu'
         }
@@ -53,21 +53,17 @@ async function main() {
     });
 
     await stagehand.init();
-    // Get page reference for V3 API
     const page = stagehand.context.pages()[0];
-
-    // Proxy browser console logs to Node process
     page.on('console', msg => console.log(`[BROWSER] ${msg.text()}`));
 
     try {
         console.log("🌐 Navigating to stallman.org...");
         await page.goto("https://stallman.org/");
-        console.log(`📍 Current URL: ${page.url()}`);
-        console.log(`📑 Page Title: ${await page.title()}`);
+        console.log(`📍 URL: ${page.url()}`);
 
         // ========== AGENT LOGIC ==========
-        // Krok 1: Znajdź i kliknij link do sekcji #upcoming-talks
-        console.log("\n🤖 AGENT: Looking for anchor link to #upcoming-talks...");
+        // Krok 1: Znajdź i kliknij link do sekcji
+        console.log("\n🤖 Looking for #upcoming-talks...");
 
         const anchorLink = await page.evaluate(() => {
             const links = Array.from(document.querySelectorAll('a[href*="#upcoming"]'));
@@ -83,20 +79,15 @@ async function main() {
         });
 
         if (anchorLink) {
-            console.log(`✅ AGENT: Found anchor link: "${anchorLink.text}" -> ${anchorLink.href}`);
-            console.log(`🖱️  AGENT: Clicking to scroll to section...`);
+            console.log(`✅ Found: "${anchorLink.text}"`);
             await page.locator(anchorLink.selector).click();
-            await new Promise(resolve => setTimeout(resolve, 500));
-            console.log(`✅ AGENT: Scrolled to section.`);
-        } else {
-            console.log(`⚠️ AGENT: No anchor link found, proceeding with full page...`);
+            await new Promise(resolve => setTimeout(resolve, 300));
         }
 
-        // Krok 2: Wyciągnij treść z sekcji
-        console.log("\n🧹 AGENT: Extracting content from target section...");
+        // Krok 2: Wyciągnij treść (OGRANICZONA DO 1500 znaków)
+        console.log("\n🧹 Extracting content...");
 
         const sectionContent = await page.evaluate(() => {
-            // Znajdź sekcję upcoming-talks
             let targetElement: Element | null =
                 document.getElementById('upcoming-talks') ||
                 document.querySelector('a[name="upcoming-talks"]');
@@ -106,93 +97,67 @@ async function main() {
                 let current: Element | null = targetElement;
                 let siblingsFound = 0;
 
-                // First pass: try direct siblings
-                for (let i = 0; i < 15 && current; i++) {
+                for (let i = 0; i < 10 && current; i++) {
                     current = current.nextElementSibling;
                     if (current) {
                         siblingsFound++;
-                        const siblingText = current.textContent || '';
-                        text += '\n' + siblingText;
-                        if (current.querySelector('a[name]') || (current.id && current.id !== 'upcoming-talks')) {
-                            break;
-                        }
+                        text += '\n' + (current.textContent || '');
+                        if (current.querySelector('a[name]') || current.id) break;
                     }
                 }
 
-                // Second pass: if no siblings found, try parent's siblings
                 if (siblingsFound === 0 && targetElement.parentElement) {
-                    console.log(`DEBUG: No direct siblings for ${targetElement.tagName}, trying parent ${targetElement.parentElement.tagName}...`);
                     current = targetElement.parentElement;
-
-                    // Add parent text if it contains more than just the anchor
-                    if (current.textContent && current.textContent.length > (targetElement.textContent?.length || 0) + 10) {
-                        text = current.textContent; // Use parent full text
-                    }
-
-                    for (let i = 0; i < 20 && current; i++) {
+                    if (current.textContent) text = current.textContent;
+                    for (let i = 0; i < 10 && current; i++) {
                         current = current.nextElementSibling;
                         if (current) {
-                            const siblingText = current.textContent || '';
-                            text += '\n' + siblingText;
-
-                            // Stop if we hit another header or anchor
-                            if (current.tagName.match(/^H[1-3]$/) ||
-                                current.querySelector('a[name]') ||
-                                (current.id && current.id !== 'upcoming-talks')) {
-                                break;
-                            }
+                            text += '\n' + (current.textContent || '');
+                            if (current.tagName.match(/^H[1-3]$/) || current.querySelector('a[name]')) break;
                         }
                     }
                 }
 
                 return {
                     found: true,
-                    sectionId: (targetElement as HTMLElement).id || (targetElement as HTMLAnchorElement).name || 'anchor',
-                    text: text.replace(/\s+/g, ' ').trim().slice(0, 4000),
+                    text: text.replace(/\s+/g, ' ').trim().slice(0, 1500), // OGRANICZENIE DO 1500 znaków
                     charCount: text.length
                 };
             }
 
-            // Fallback: cały body
             return {
                 found: false,
-                sectionId: 'body',
-                text: document.body.innerText.replace(/\s+/g, ' ').trim().slice(0, 4000),
+                text: document.body.innerText.replace(/\s+/g, ' ').trim().slice(0, 1500),
                 charCount: document.body.innerText.length
             };
         });
 
-        console.log(`📄 Section found: ${sectionContent.found} (ID: ${sectionContent.sectionId})`);
-        console.log(`📄 Extracted: ${sectionContent.charCount} chars`);
-        console.log(`\n--- SECTION CONTENT (first 1500 chars) ---\n${sectionContent.text.slice(0, 1500)}\n--- END ---\n`);
+        console.log(`📄 Extracted: ${sectionContent.charCount} chars (using first 1500)`);
 
-        // Krok 3: Wywołaj LLM
-        console.log("👀 AGENT: Asking LLM to extract talks from section...");
-
-        const prompt = `Summarize the upcoming talks mentioned in the text below.
-List them in a simple format:
-- Date: Location (Details)
-
-Identify ANY event mentioned, even if the date is incomplete.
-
-TEXT TO PREOCESS:
-${sectionContent.text}`;
-
-        const response = await provider.chat([
-            { role: 'system', content: 'Summarize text and list events.' },
-            { role: 'user', content: prompt }
-        ], { maxTokens: 512 });
-
-        console.log("📝 Model Output:\n", response.content);
-
-        // Opcjonalnie: proste wykrywanie dat/linii
-        const lines = response.content.split('\n').filter((l: string) => l.includes(':') || l.includes('January') || l.includes('Friday'));
-        if (lines.length > 0) {
-            console.log("✅ Extracted events found:");
-            lines.forEach((l: string) => console.log(`   * ${l.trim()}`));
-        } else {
-            console.log("⚠️ Raw output shown above");
+        // Ostrzeżenie o przekroczeniu limitu
+        if (sectionContent.charCount > 1500) {
+            console.warn(`⚠️ WARNING: Input truncated from ${sectionContent.charCount} to 1500 chars`);
         }
+
+        // Krok 3: Wywołaj LLM ze STREAMINGIEM
+        console.log("\n👀 Asking LLM (streaming)...\n");
+
+        const prompt = `Extract first event: ${sectionContent.text.slice(0, 500)}
+Format: Date - Location - Title`;
+
+        // STREAMING - pokazuj tokeny w czasie rzeczywistym
+        process.stdout.write("📝 ");
+        let fullResponse = '';
+
+        for await (const token of provider.stream([
+            { role: 'system', content: 'Extract one event. Very brief.' },
+            { role: 'user', content: prompt }
+        ], { maxTokens: 64 })) { // TYLKO 64 tokeny
+            process.stdout.write(token);
+            fullResponse += token;
+        }
+
+        console.log("\n\n✅ Done!");
 
     } catch (error) {
         console.error("❌ Error:", error);
