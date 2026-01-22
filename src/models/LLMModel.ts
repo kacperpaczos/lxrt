@@ -564,4 +564,57 @@ export class LLMModel extends BaseModel<LLMConfig> {
     // Simple estimation: ~4 characters per token
     return Math.ceil(text.length / 4);
   }
+
+  /**
+   * Count tokens in text using the model's tokenizer
+   * @param text Text to count tokens for
+   * @returns Token count
+   * @throws Error if model not loaded
+   */
+  countTokens(text: string): number {
+    if (!this.loaded || !this.pipeline) {
+      throw new Error(
+        'Model must be loaded before counting tokens. Call warmup() first.'
+      );
+    }
+
+    const typedPipeline = this.pipeline as { tokenizer?: LLMTokenizer };
+    const tokenizer = typedPipeline?.tokenizer;
+
+    if (!tokenizer?.encode) {
+      // Fallback to estimation if encode not available
+      console.warn(
+        '[LLMModel] Tokenizer.encode() not available, using estimation'
+      );
+      return this.estimateTokens(text);
+    }
+
+    const tokens = tokenizer.encode(text);
+    return tokens.length;
+  }
+
+  /**
+   * Get the model's context window size
+   * @returns Context window in tokens
+   */
+  getContextWindow(): number {
+    const modelName = this.config.model.toLowerCase();
+
+    // Known context windows by model family
+    if (modelName.includes('phi-3')) return 4096;
+    if (modelName.includes('phi-2')) return 2048;
+    if (modelName.includes('qwen2')) return 8192;
+    if (modelName.includes('qwen1.5') || modelName.includes('qwen-1.5'))
+      return 4096;
+    if (modelName.includes('llama-3') || modelName.includes('llama3'))
+      return 8192;
+    if (modelName.includes('llama-2') || modelName.includes('llama2'))
+      return 4096;
+    if (modelName.includes('mistral')) return 8192;
+    if (modelName.includes('gemma')) return 8192;
+    if (modelName.includes('tinyllama')) return 2048;
+
+    // Conservative default for unknown models
+    return 2048;
+  }
 }
