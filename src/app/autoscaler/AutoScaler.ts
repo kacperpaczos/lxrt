@@ -77,19 +77,23 @@ export class AutoScaler {
     }
 
     // 2. Device/DType scaling (Phase 2+)
+    // Scale DType using ModelSelector (Phase 2)
+    scaledConfig = this.modelSelector.selectBestDType(
+      modality,
+      scaledConfig,
+      capabilities
+    );
+
     const partialConfig = scaledConfig as Partial<
       LLMConfig & TTSConfig & STTConfig & EmbeddingConfig
     >;
 
-    // Select device if not provided
+    // Select device if not provided (Device Selection Phase)
     if (!partialConfig.device) {
       partialConfig.device = this.selectDevice(capabilities);
     }
 
-    // Select dtype if not provided
-    if (!partialConfig.dtype) {
-      partialConfig.dtype = this.selectDType(capabilities);
-    }
+    // Legacy selectDType fallckback removed as ModelSelector handles it now
 
     // Select maxTokens for LLM if not provided
     if (modality === 'llm') {
@@ -126,17 +130,7 @@ export class AutoScaler {
     }
   }
 
-  /**
-   * Selects optimal data type based on capabilities
-   */
-  private selectDType(caps: SystemCapabilities): DType {
-    // Phase 2: Will implement smarter selection
-    // For now stick to q4 or q8
-    if (caps.hasWebGPU && caps.totalRAM > 4 * 1024 * 1024 * 1024) {
-      return 'q8'; // Better quality if GPU + >4GB RAM
-    }
-    return 'q4'; // Default safe for most
-  }
+
 
   /**
    * Selects maximum number of tokens for LLM

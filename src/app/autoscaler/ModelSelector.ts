@@ -5,7 +5,7 @@
  * Implements the decision matrix for Auto-Tuning logic.
  */
 
-import type { Modality, ModelConfig, LLMConfig } from '../../core/types';
+import type { Modality, ModelConfig, LLMConfig, DType } from '../../core/types';
 import type { SystemCapabilities } from './SystemCapabilities';
 import { LLM_PRESETS } from '../../core/ModelPresets';
 
@@ -99,6 +99,52 @@ export class ModelSelector {
     return {
       ...config,
       model: selectedModel,
+    };
+  }
+
+  /**
+   * Select best dtype based on capabilities
+   */
+  selectBestDType(
+    modality: Modality,
+    config: ModelConfig,
+    capabilities: SystemCapabilities
+  ): ModelConfig {
+    // If dtype is already set, respect it
+    if (config.dtype) {
+      return config;
+    }
+
+    // Default base dtype
+    let selectedDtype: DType = 'q4';
+
+    const RAM_4GB = 4 * 1024 * 1024 * 1024;
+
+    if (capabilities.hasWebGPU) {
+      // GPU available logic
+      if (capabilities.totalRAM >= RAM_4GB) {
+        // GPU + Enough RAM -> fp16 (Best quality/performance on WebGPU)
+        selectedDtype = 'fp16';
+      } else {
+        // GPU but low RAM -> q8 (Good balance)
+        selectedDtype = 'q8';
+      }
+    } else {
+      // CPU/WASM -> q4 (Safest for memory and download size)
+      if (
+        capabilities.platform === 'node' &&
+        capabilities.totalRAM >= RAM_4GB
+      ) {
+        // Node has better FS execution, maybe q8 is fine
+        selectedDtype = 'q8';
+      } else {
+        selectedDtype = 'q4';
+      }
+    }
+
+    return {
+      ...config,
+      dtype: selectedDtype,
     };
   }
 }

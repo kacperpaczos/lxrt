@@ -86,7 +86,48 @@ describe('ModelSelector', () => {
             const config = { model: 'some-embedding' };
             // @ts-ignore
             const result = selector.selectBestModel('embedding', config, heavySystem);
-            expect(result).toBe(config); // No changess
+        });
+    });
+
+    describe('selectBestDType', () => {
+        it('should select FP16 for WebGPU with High RAM', () => {
+            const config: LLMConfig = { model: 'chat-light' };
+            const result = selector.selectBestDType('llm', config, heavySystem) as LLMConfig;
+            expect(result.dtype).toBe('fp16');
+        });
+
+        it('should select Q8 for WebGPU with Low RAM', () => {
+            const config: LLMConfig = { model: 'chat-light' };
+            // Override heavy system to be GPU but low RAM for this test
+            const gpuLowRam: SystemCapabilities = { ...heavySystem, totalRAM: 2 * 1024 * 1024 * 1024 };
+
+            const result = selector.selectBestDType('llm', config, gpuLowRam) as LLMConfig;
+            expect(result.dtype).toBe('q8');
+        });
+
+        it('should select Q4 for CPU/WASM (default)', () => {
+            const config: LLMConfig = { model: 'chat-light' };
+            const result = selector.selectBestDType('llm', config, lightSystem) as LLMConfig;
+            expect(result.dtype).toBe('q4');
+        });
+
+        it('should select Q8 for Node with High RAM', () => {
+            const config: LLMConfig = { model: 'chat-light' };
+            const nodeHighRam: SystemCapabilities = {
+                platform: 'node',
+                hasWebGPU: false,
+                totalRAM: 8 * 1024 * 1024 * 1024,
+                cores: 8
+            };
+
+            const result = selector.selectBestDType('llm', config, nodeHighRam) as LLMConfig;
+            expect(result.dtype).toBe('q8');
+        });
+
+        it('should respect existing dtype preference', () => {
+            const config: LLMConfig = { model: 'chat-light', dtype: 'q4' };
+            const result = selector.selectBestDType('llm', config, heavySystem) as LLMConfig;
+            expect(result.dtype).toBe('q4');
         });
     });
 });
