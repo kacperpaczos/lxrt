@@ -414,6 +414,27 @@ npx lxrt remove Xenova/Phi-3-mini-4k-instruct
 
 ---
 
+### 13. Brak Registry i Type-Safety dla modeli
+
+**Problem:**  
+Wszystkie konfiguracje modeli (`LLMConfig`, `STTConfig`) używają typu `string` dla pola `model`. Brak weryfikacji czy model istnieje oraz brak autouzupełniania w IDE.
+
+**Uzasadnienie:**  
+Programista musi znać dokładne ID modelu z Hugging Face (np. `Xenova/whisper-tiny`). Literówka powoduje błąd dopiero w runtime (przy próbie pobrania).
+
+**Jak to obeszliśmy:**  
+Ręczne wpisywanie stringów bez walidacji.
+
+**Proponowane rozwiązanie (Model Registry):**
+Implementacja podejścia "Registry + Type-Safety":
+- **Registry:** Centralny plik `src/core/ModelRegistry.ts` z definicjami przetestowanych modeli.
+- **Typy:** `type SupportedLLM = keyof typeof MODEL_REGISTRY.llm`.
+- **Hybrid types:** `model: SupportedLLM | (string & {})` - zapewnia autouzupełnianie dla znanych modeli, zachowując możliwość wpisania dowolnego stringa.
+
+**Estymowany nakład:** 2-3 dni
+
+---
+
 ## Podsumowanie Priorytetów
 
 | # | Zadanie | Priorytet | Nakład | Wpływ |
@@ -430,6 +451,7 @@ npx lxrt remove Xenova/Phi-3-mini-4k-instruct
 | 10 | Docs streaming | 🟢 Średni | 0.5 dnia | Niski |
 | 11 | Adaptery integracji | 🟢 Średni | 3 tygodnie | Średni |
 | 12 | CLI zarządzania | 🟢 Średni | 1 tydzień | Średni |
+| 13 | Model Registry & Types | 🟢 Średni | 2-3 dni | Średni |
 
 **Sugerowana kolejność na następny cykl:**
 1. Fix ONNX conflict + path aliases (szybkie wygrane)

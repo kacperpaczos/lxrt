@@ -14,6 +14,7 @@ import { BaseModel } from './BaseModel';
 import { getConfig } from '../app/state';
 import { ModelLoadError, InferenceError } from '@domain/errors';
 import type { BackendSelector } from '../app/backend/BackendSelector';
+import { getModelInfo, MODEL_REGISTRY } from '../core/ModelRegistry';
 
 // Type definitions for LLM pipeline components
 interface LLMTokenizer {
@@ -598,14 +599,27 @@ export class LLMModel extends BaseModel<LLMConfig> {
    * @returns Context window in tokens
    */
   getContextWindow(): number {
-    const modelName = this.config.model.toLowerCase();
+    // 1. Try direct registry lookup
+    const info = getModelInfo('llm', this.config.model);
+    if (info && 'contextWindow' in info) {
+      return info.contextWindow;
+    }
 
-    // Known context windows by model family
+    // 2. Fallback: Try to match by family from registry
+    const modelName = this.config.model.toLowerCase();
+    for (const modelInfo of Object.values(MODEL_REGISTRY.llm)) {
+      if (modelName.includes(modelInfo.family)) {
+        return modelInfo.contextWindow;
+      }
+    }
+
+    // 3. Fallback: Heuristics for models not in registry
     if (modelName.includes('phi-3')) return 4096;
     if (modelName.includes('phi-2')) return 2048;
     if (modelName.includes('qwen2')) return 8192;
+    // Fix: Qwen1.5 usually has 32k context, but let's keep it safe if not in registry
     if (modelName.includes('qwen1.5') || modelName.includes('qwen-1.5'))
-      return 4096;
+      return 32768;
     if (modelName.includes('llama-3') || modelName.includes('llama3'))
       return 8192;
     if (modelName.includes('llama-2') || modelName.includes('llama2'))
@@ -614,7 +628,7 @@ export class LLMModel extends BaseModel<LLMConfig> {
     if (modelName.includes('gemma')) return 8192;
     if (modelName.includes('tinyllama')) return 2048;
 
-    // Conservative default for unknown models
+    // Conservative default
     return 2048;
   }
 }

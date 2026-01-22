@@ -13,6 +13,14 @@ export type {
   VoiceProfileOptions,
 } from './VoiceProfile';
 
+import type {
+  SupportedLLM,
+  SupportedEmbedding,
+  SupportedSTT,
+  SupportedTTS,
+  SupportedOCR,
+} from './ModelRegistry';
+
 // Supported modalities
 export type Modality = 'llm' | 'tts' | 'stt' | 'embedding' | 'ocr';
 
@@ -34,7 +42,7 @@ export interface Message {
 
 // LLM Configuration
 export interface LLMConfig {
-  model: string;
+  model: SupportedLLM | (string & {});
   dtype?: DType;
   device?: Device;
   performanceMode?: 'auto' | 'fast' | 'quality';
@@ -47,7 +55,7 @@ export interface LLMConfig {
 
 // TTS Configuration
 export interface TTSConfig {
-  model: string;
+  model: SupportedTTS | (string & {});
   dtype?: DType;
   device?: Device;
   speaker?: string | Float32Array;
@@ -58,7 +66,7 @@ export interface TTSConfig {
 
 // STT Configuration
 export interface STTConfig {
-  model: string;
+  model: SupportedSTT | (string & {});
   dtype?: DType;
   device?: Device;
   performanceMode?: 'auto' | 'fast' | 'quality';
@@ -68,7 +76,7 @@ export interface STTConfig {
 
 // Embedding Configuration
 export interface EmbeddingConfig {
-  model: string;
+  model: SupportedEmbedding | (string & {});
   dtype?: DType;
   device?: Device;
   performanceMode?: 'auto' | 'fast' | 'quality';
@@ -78,7 +86,7 @@ export interface EmbeddingConfig {
 
 // OCR Configuration
 export interface OCRConfig {
-  model?: string; // for compatibility (Tesseract uses its own models)
+  model?: SupportedOCR | (string & {}); // for compatibility (Tesseract uses its own models)
   dtype?: DType;
   device?: Device;
   language?: string | string[]; // e.g. 'eng', 'pol', ['eng', 'pol']

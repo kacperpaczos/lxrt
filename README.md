@@ -134,6 +134,52 @@ await provider.indexFiles([file1, file2]);
 const results = await provider.queryVectors('Jak działa AI?');
 ```
 
+### 🎯 Model Registry i Type Safety
+
+LXRT zapewnia **type-safe model registry** z auto-completion dla wspieranych modeli:
+
+```typescript
+import { createAIProvider, type SupportedLLM, MODEL_REGISTRY, getModelInfo } from 'lxrt';
+
+// ✅ Auto-completion dla znanych modeli
+const model: SupportedLLM = 'Xenova/Qwen1.5-0.5B-Chat';
+
+// ✅ Nadal można używać dowolnych stringów
+const customModel = 'my-org/my-custom-model';
+
+// Pobranie informacji o modelu
+const info = getModelInfo('llm', 'Xenova/Qwen1.5-0.5B-Chat');
+console.log(info?.contextWindow); // 32768
+console.log(info?.family); // 'qwen'
+
+// Przeglądanie wszystkich modeli
+console.log(MODEL_REGISTRY.llm);
+console.log(MODEL_REGISTRY.embedding);
+```
+
+### 🔢 Liczenie Tokenów i Context Window
+
+```typescript
+const provider = createAIProvider({
+  llm: { model: 'Xenova/Qwen1.5-0.5B-Chat' }
+});
+
+await provider.warmup('llm');
+
+// Sprawdź rozmiar okna kontekstowego
+const contextWindow = provider.getContextWindow(); // 32768
+
+// Policz tokeny w tekście
+const text = 'To jest przykładowy tekst do analizy.';
+const tokenCount = provider.countTokens(text); // ~12
+
+// Upewnij się że tekst mieści się w oknie
+if (tokenCount > contextWindow - 512) {
+  // Obetnij tekst aby zmieścił się w limicie
+  console.warn('Tekst za długi, obcinanie...');
+}
+```
+
 ---
 
 ## Adaptery

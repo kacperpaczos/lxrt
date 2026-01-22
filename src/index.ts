@@ -96,6 +96,30 @@ export type {
   JobStatus,
 } from './core/types';
 
+// Model Registry Types
+export type {
+  SupportedLLM,
+  SupportedEmbedding,
+  SupportedSTT,
+  SupportedTTS,
+  SupportedOCR,
+  LLMModelInfo,
+  EmbeddingModelInfo,
+  STTModelInfo,
+  TTSModelInfo,
+  OCRModelInfo,
+  BaseModelInfo,
+} from './core/ModelRegistry';
+
+// Model Registry Functions
+export {
+  MODEL_REGISTRY,
+  getModelInfo,
+  isKnownModel,
+  getDefaultModel,
+  DEFAULT_MODELS,
+} from './core/ModelRegistry';
+
 // Utility types and classes
 export type {
   AudioInput,
