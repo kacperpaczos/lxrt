@@ -301,6 +301,40 @@ export class AIProvider {
     return this.modelManager.getAllStatuses();
   }
 
+  // ==================== Token Counting Methods ====================
+
+  /**
+   * Count tokens in text using the LLM's tokenizer
+   * Model must be loaded first (call warmup('llm') if needed)
+   * @param text Text to count tokens for
+   * @returns Token count
+   */
+  countTokens(text: string): number {
+    const model = this.modelManager.getModel('llm');
+    if (!model) {
+      throw new Error(
+        'LLM model not configured. Add llm config to createAIProvider().'
+      );
+    }
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    return (model as any).countTokens(text);
+  }
+
+  /**
+   * Get the LLM's context window size
+   * @returns Context window in tokens
+   */
+  getContextWindow(): number {
+    const model = this.modelManager.getModel('llm');
+    if (!model) {
+      throw new Error(
+        'LLM model not configured. Add llm config to createAIProvider().'
+      );
+    }
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    return (model as any).getContextWindow();
+  }
+
   // ==================== Event Methods ====================
 
   /**
