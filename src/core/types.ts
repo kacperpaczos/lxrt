@@ -21,6 +21,14 @@ import type {
   SupportedOCR,
 } from './ModelRegistry';
 
+import type {
+  LLMPreset,
+  EmbeddingPreset,
+  STTPreset,
+  TTSPreset,
+  OCRPreset,
+} from './ModelPresets';
+
 // Supported modalities
 export type Modality = 'llm' | 'tts' | 'stt' | 'embedding' | 'ocr';
 
@@ -42,7 +50,7 @@ export interface Message {
 
 // LLM Configuration
 export interface LLMConfig {
-  model: SupportedLLM | (string & {});
+  model: LLMPreset | SupportedLLM | (string & {});
   dtype?: DType;
   device?: Device;
   performanceMode?: 'auto' | 'fast' | 'quality';
@@ -55,7 +63,7 @@ export interface LLMConfig {
 
 // TTS Configuration
 export interface TTSConfig {
-  model: SupportedTTS | (string & {});
+  model: TTSPreset | SupportedTTS | (string & {});
   dtype?: DType;
   device?: Device;
   speaker?: string | Float32Array;
@@ -66,7 +74,7 @@ export interface TTSConfig {
 
 // STT Configuration
 export interface STTConfig {
-  model: SupportedSTT | (string & {});
+  model: STTPreset | SupportedSTT | (string & {});
   dtype?: DType;
   device?: Device;
   performanceMode?: 'auto' | 'fast' | 'quality';
@@ -76,7 +84,7 @@ export interface STTConfig {
 
 // Embedding Configuration
 export interface EmbeddingConfig {
-  model: SupportedEmbedding | (string & {});
+  model: EmbeddingPreset | SupportedEmbedding | (string & {});
   dtype?: DType;
   device?: Device;
   performanceMode?: 'auto' | 'fast' | 'quality';
@@ -86,7 +94,7 @@ export interface EmbeddingConfig {
 
 // OCR Configuration
 export interface OCRConfig {
-  model?: SupportedOCR | (string & {}); // for compatibility (Tesseract uses its own models)
+  model?: OCRPreset | SupportedOCR | (string & {}); // for compatibility (Tesseract uses its own models)
   dtype?: DType;
   device?: Device;
   language?: string | string[]; // e.g. 'eng', 'pol', ['eng', 'pol']

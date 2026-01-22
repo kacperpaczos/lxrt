@@ -120,6 +120,27 @@ export {
   DEFAULT_MODELS,
 } from './core/ModelRegistry';
 
+// Model Presets Types and Functions
+export type {
+  LLMPreset,
+  EmbeddingPreset,
+  STTPreset,
+  TTSPreset,
+  OCRPreset,
+} from './core/ModelPresets';
+
+export {
+  MODEL_PRESETS,
+  LLM_PRESETS,
+  EMBEDDING_PRESETS,
+  STT_PRESETS,
+  TTS_PRESETS,
+  OCR_PRESETS,
+  resolveModelId,
+  isPreset,
+  getAvailablePresets,
+} from './core/ModelPresets';
+
 // Utility types and classes
 export type {
   AudioInput,

@@ -462,6 +462,56 @@ Implementacja podejścia "Registry + Type-Safety":
 
 ---
 
+## Przyszłe Rozszerzenia - Auto-Tuning System
+
+### Implementacja w Fazach (patrz: autotuning_plan.md)
+
+#### Faza 0: Model Presets ✅ ZAKOŃCZONE
+**Status:** Implementacja statycznych presetów (`chat-light`, `embedding-quality`)  
+**Cel:** Foundation dla auto-tuningu - semantic naming dla modeli  
+**Nakład:** 1-2 dni
+
+#### Faza 1-5: Auto-Tuning (Priorytetowe)
+
+| # | Funkcja | Priorytet | Nakład | Opis |
+|---|---------|-----------|--------|------|
+| 1 | **Model Selection** | 🔴 Bardzo wysoki | 3-4 dni | Auto-wybór modelu na podstawie RAM, GPU, platform |
+| 2 | **DType Selection** | 🔴 Wysoki | 1-2 dni | Auto kwantyzacja (fp16/q8/q4) na podstawie zasobów |
+| 3 | **Performance Mode** | 🟡 Średni | 1-2 dni | Auto fast/balanced/quality w zależności od środowiska |
+| 4 | **WASM Threads** | ✅ Już działa | 0.5-1 dzień | Ulepszenia istniejącej logiki thread count |
+| 5 | **Context/Tokens Limits** | 🟢 Niski | 1 dzień | Auto-limitowanie dla słabych systemów (OOM prevention) |
+
+**Total Faza 1-5:** ~8-12 dni roboczych
+
+#### Przyszłe Ulepszenia (Później)
+
+| # | Funkcja | Priorytet | Nakład | Opis |
+|---|---------|-----------|--------|------|
+| 6 | **Batch Size Tuning** | 🟡 Średni | 2-3 dni | Automatyczny batch size dla embeddings na podstawie RAM/GPU |
+| 7 | **Cache Strategy** | 🟢 Niski | 3-5 dni | Inteligentne zarządzanie cache (eviction, quota management) |
+| 8 | **Inference Params** | 🟢 Niski | 1-2 dni | Auto-tuning temperature, topK, topP dla różnych use-cases |
+
+**Przykładowe API po auto-tuningu:**
+```typescript
+const provider = createAIProvider({
+  llm: {
+    preset: 'chat',      // intencja użytkownika
+    autoTune: true       // auto: model + dtype + performance
+  }
+});
+
+// System automatycznie wybiera:
+// - Model: chat-light/medium/heavy na podstawie RAM & GPU  
+// - DType: fp16/q8/q4 na podstawie capabilities
+// - Performance: fast/balanced/quality
+// - Threads: optimal count
+// - MaxTokens: safe limits
+```
+
+**Więcej:** Szczegóły implementacji w `autotuning_plan.md` (artifact)
+
+---
+
 ## Załączniki
 
 ### A. Kod adaptera Stagehand

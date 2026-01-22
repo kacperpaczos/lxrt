@@ -157,6 +157,30 @@ console.log(MODEL_REGISTRY.llm);
 console.log(MODEL_REGISTRY.embedding);
 ```
 
+### 🏷️ Model Presets (Semantic Naming)
+
+LXRT oferuje **presety** - semantyczne nazwy dla modeli, ułatwiające wybór odpowiedniego rozwiązania bez znania konkretnych ID.
+
+```typescript
+const provider = createAIProvider({
+  // Zamiast 'Xenova/Qwen1.5-0.5B-Chat'
+  llm: { model: 'chat-light' },
+  
+  // Zamiast 'Xenova/all-MiniLM-L6-v2'
+  embedding: { model: 'embedding-quality' },
+  
+  // Działa też 'fast', 'balanced', 'quality'
+  stt: { model: 'fast' }
+});
+```
+
+**Dostępne presety (LLM):**
+- `tiny` (<1GB, GPT-2)
+- `chat-light` (~2GB, Qwen 1.5 0.5B)
+- `chat-medium` (~4GB, Phi-3 Mini)
+- `chat-heavy` (>4GB, Gemma 2B)
+- `fast` / `balanced` / `quality`
+
 ### 🔢 Liczenie Tokenów i Context Window
 
 ```typescript
