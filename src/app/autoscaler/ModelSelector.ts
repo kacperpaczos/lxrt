@@ -200,4 +200,41 @@ export class ModelSelector {
       performanceMode: mode,
     };
   }
+
+  /**
+   * Select best threads count based on capabilities
+   */
+  selectBestThreads(
+    modality: Modality,
+    config: ModelConfig,
+    capabilities: SystemCapabilities
+  ): ModelConfig {
+    // If threads explicitly set, return
+    if (config.threads) {
+      return config;
+    }
+
+    // Default threads logic
+    let threads = 1;
+    const cores = capabilities.cores || 4; // fallback if unknown
+
+    if (capabilities.platform === 'browser') {
+      // Browser: CPU (WASM) uses workers.
+      // Don't use all cores to keep UI responsive.
+      // Max 4 is usually sweet spot for WASM overhead.
+      threads = Math.max(1, Math.min(4, Math.ceil(cores / 2)));
+    } else {
+      // Node: Can use more, but usually max(1, cores-1)
+      threads = Math.max(1, cores - 1);
+    }
+
+    // For GPU backends threads might be less relevant for computation but used for pre-processing/loading.
+    // However, if we are on WebGPU, usually main work is on GPU.
+    // We stick to CPU core logic as safe default for now.
+
+    return {
+      ...config,
+      threads,
+    };
+  }
 }

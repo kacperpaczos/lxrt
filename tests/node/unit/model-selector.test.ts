@@ -172,4 +172,43 @@ describe('ModelSelector', () => {
             expect(result.performanceMode).toBe('fast');
         });
     });
+
+    describe('selectBestThreads', () => {
+        it('should use half cores (max 4) for Browser WASM', () => {
+            const config: LLMConfig = { model: 'chat' };
+            // 8 cores -> 4 threads
+            const result = selector.selectBestThreads('llm', config, heavySystem) as LLMConfig;
+            expect(result.threads).toBe(4);
+        });
+
+        it('should ensure at least 1 thread for Browser', () => {
+            const config: LLMConfig = { model: 'chat' };
+            // 1 core? obscure but possible
+            const singleCore: SystemCapabilities = { ...lightSystem, cores: 1 };
+            const result = selector.selectBestThreads('llm', config, singleCore) as LLMConfig;
+            expect(result.threads).toBe(1);
+        });
+
+        it('should cap threads at 4 for Browser even if many cores', () => {
+            const config: LLMConfig = { model: 'chat' };
+            // 32 cores -> still 4 threads to avoid UI block
+            const superPc: SystemCapabilities = { ...heavySystem, cores: 32 };
+            const result = selector.selectBestThreads('llm', config, superPc) as LLMConfig;
+            expect(result.threads).toBe(4);
+        });
+
+        it('should use cores-1 for Node', () => {
+            const config: LLMConfig = { model: 'chat' };
+            // 8 cores -> 7 threads
+            const node8: SystemCapabilities = { ...heavySystem, platform: 'node', cores: 8 };
+            const result = selector.selectBestThreads('llm', config, node8) as LLMConfig;
+            expect(result.threads).toBe(7);
+        });
+
+        it('should respect manual threads setting', () => {
+            const config: LLMConfig = { model: 'chat', threads: 2 };
+            const result = selector.selectBestThreads('llm', config, heavySystem) as LLMConfig;
+            expect(result.threads).toBe(2);
+        });
+    });
 });

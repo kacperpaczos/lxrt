@@ -59,6 +59,7 @@ export interface LLMConfig {
   topP?: number;
   topK?: number;
   repetitionPenalty?: number;
+  threads?: number;
 }
 
 // TTS Configuration
@@ -70,6 +71,7 @@ export interface TTSConfig {
   sampleRate?: number;
   voiceProfile?: string; // voice profile ID
   skip?: boolean; // Opcja do pomijania TTS
+  threads?: number;
 }
 
 // STT Configuration
@@ -80,6 +82,7 @@ export interface STTConfig {
   performanceMode?: 'auto' | 'fast' | 'quality';
   language?: string;
   task?: 'transcribe' | 'translate';
+  threads?: number;
 }
 
 // Embedding Configuration
@@ -90,6 +93,7 @@ export interface EmbeddingConfig {
   performanceMode?: 'auto' | 'fast' | 'quality';
   pooling?: 'mean' | 'cls';
   normalize?: boolean;
+  threads?: number;
 }
 
 // OCR Configuration
@@ -99,6 +103,7 @@ export interface OCRConfig {
   device?: Device;
   language?: string | string[]; // e.g. 'eng', 'pol', ['eng', 'pol']
   performanceMode?: 'auto' | 'fast' | 'balanced' | 'quality';
+  threads?: number;
 }
 
 // Unified ModelConfig type

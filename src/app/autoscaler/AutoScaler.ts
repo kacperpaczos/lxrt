@@ -91,6 +91,13 @@ export class AutoScaler {
       capabilities
     );
 
+    // 4. Threads Selection (Phase 4)
+    scaledConfig = this.modelSelector.selectBestThreads(
+      modality,
+      scaledConfig,
+      capabilities
+    );
+
     const partialConfig = scaledConfig as Partial<
       LLMConfig & TTSConfig & STTConfig & EmbeddingConfig
     >;
