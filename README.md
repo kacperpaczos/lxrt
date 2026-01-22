@@ -181,6 +181,24 @@ const provider = createAIProvider({
 - `chat-heavy` (>4GB, Gemma 2B)
 - `fast` / `balanced` / `quality`
 
+### 🎛️ Auto-Tuning (Inteligentny Wybór Modelu)
+
+LXRT potrafi **automatycznie dobrać najlepszy model** na podstawie Twojego sprzętu (RAM, GPU). Wystarczy dodać flagę `autoTune: true`:
+
+```typescript
+const provider = createAIProvider({
+  llm: { 
+    model: 'chat', // ogólna intencja
+    autoTune: true // pozwól na automatyczny dobór
+  }
+});
+
+// Wynik autotuningu:
+// - High-end PC (32GB RAM + GPU) -> 'chat-heavy' (Gemma 2B)
+// - Laptop (8GB RAM) -> 'chat-medium' (Phi-3 Mini)
+// - Słaby sprzęt / Browser -> 'chat-light' (Qwen 0.5B)
+```
+
 ### 🔢 Liczenie Tokenów i Context Window
 
 ```typescript

@@ -102,12 +102,13 @@ export interface OCRConfig {
 }
 
 // Unified ModelConfig type
-export type ModelConfig =
+export type ModelConfig = (
   | LLMConfig
   | TTSConfig
   | STTConfig
   | EmbeddingConfig
-  | OCRConfig;
+  | OCRConfig
+) & { autoTune?: boolean };
 
 // AI Provider Configuration
 export interface AIProviderConfig {

@@ -475,7 +475,7 @@ Implementacja podejścia "Registry + Type-Safety":
 
 | # | Funkcja | Priorytet | Nakład | Opis |
 |---|---------|-----------|--------|------|
-| 1 | **Model Selection** | 🔴 Bardzo wysoki | 3-4 dni | Auto-wybór modelu na podstawie RAM, GPU, platform |
+| 1 | **Model Selection** | 🔴 Bardzo wysoki | ✅ ZAKOŃCZONE | Auto-wybór modelu na podstawie RAM, GPU, platform |
 | 2 | **DType Selection** | 🔴 Wysoki | 1-2 dni | Auto kwantyzacja (fp16/q8/q4) na podstawie zasobów |
 | 3 | **Performance Mode** | 🟡 Średni | 1-2 dni | Auto fast/balanced/quality w zależności od środowiska |
 | 4 | **WASM Threads** | ✅ Już działa | 0.5-1 dzień | Ulepszenia istniejącej logiki thread count |

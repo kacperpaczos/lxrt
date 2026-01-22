@@ -79,7 +79,11 @@ export class ModelManager {
     const resolvedConfig = this.resolvePreset(modality, config);
 
     // Auto-scaler: optionally adjust config based on capabilities and performanceMode
-    const scaledConfig = this.autoScaler.autoScale(modality, resolvedConfig);
+    // Auto-scaler: optionally adjust config based on capabilities and performanceMode
+    const scaledConfig = await this.autoScaler.autoScale(
+      modality,
+      resolvedConfig
+    );
 
     // Check cache using scaled config (consistent with what we store)
     console.log(`[ModelManager] Checking cache for ${modality}:`, scaledConfig);
