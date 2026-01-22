@@ -479,7 +479,7 @@ Implementacja podejścia "Registry + Type-Safety":
 | 2 | **DType Selection** | 🔴 Wysoki | ✅ ZAKOŃCZONE | Auto kwantyzacja (fp16/q8/q4) na podstawie zasobów |
 | 3 | **Performance Mode** | 🟡 Średni | ✅ ZAKOŃCZONE | Auto fast/balanced/quality w zależności od środowiska |
 | 4 | **WASM Threads** | ✅ Już działa | ✅ ZAKOŃCZONE | Ulepszenia istniejącej logiki thread count |
-| 5 | **Context/Tokens Limits** | 🟢 Niski | 1 dzień | Auto-limitowanie dla słabych systemów (OOM prevention) |
+| 5 | **Context/Tokens Limits** | 🟢 Niski | ✅ ZAKOŃCZONE | Auto-limitowanie dla słabych systemów (OOM prevention) |
 
 **Total Faza 1-5:** ~8-12 dni roboczych
 

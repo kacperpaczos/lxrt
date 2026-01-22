@@ -109,16 +109,12 @@ export class AutoScaler {
 
     // Legacy selectDType fallckback removed as ModelSelector handles it now
 
-    // Select maxTokens for LLM if not provided
-    if (modality === 'llm') {
-      const llmConfig = scaledConfig as LLMConfig;
-      if (llmConfig.maxTokens == null) {
-        llmConfig.maxTokens = this.selectMaxTokens(modality, capabilities);
-      }
-    }
-
-    // Remove autoTune flag from result as it's not part of standard config interface
-    // (though our type definition allows it, it's cleaner to treat it as a directive)
+    // 5. Context/Tokens Limits (Phase 5)
+    scaledConfig = this.modelSelector.selectMaxTokens(
+      modality,
+      scaledConfig,
+      capabilities
+    );
 
     return scaledConfig;
   }
@@ -142,23 +138,6 @@ export class AutoScaler {
     } else {
       return 'cpu';
     }
-  }
-
-  /**
-   * Selects maximum number of tokens for LLM
-   */
-  private selectMaxTokens(
-    modality: Modality,
-    caps: SystemCapabilities
-  ): number | undefined {
-    // Phase 5: Will implement smarter limits
-    if (modality === 'llm') {
-      // Conservative default for low RAM systems
-      if (caps.totalRAM < 2 * 1024 * 1024 * 1024) {
-        return 512;
-      }
-    }
-    return undefined;
   }
 
   /**

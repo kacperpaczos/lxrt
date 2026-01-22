@@ -211,4 +211,40 @@ describe('ModelSelector', () => {
             expect(result.threads).toBe(2);
         });
     });
+
+    describe('selectMaxTokens', () => {
+        it('should limit tokens to 1024 for VERY Low RAM (<2GB)', () => {
+            const config: LLMConfig = { model: 'chat' };
+            const lowRAM: SystemCapabilities = { ...lightSystem, totalRAM: 1.5 * 1024 * 1024 * 1024 };
+            const result = selector.selectMaxTokens('llm', config, lowRAM) as LLMConfig;
+            expect(result.maxTokens).toBe(1024);
+        });
+
+        it('should limit tokens to 2048 for Low RAM (2-4GB)', () => {
+            const config: LLMConfig = { model: 'chat' };
+            const midRAM: SystemCapabilities = { ...lightSystem, totalRAM: 3 * 1024 * 1024 * 1024 };
+            const result = selector.selectMaxTokens('llm', config, midRAM) as LLMConfig;
+            expect(result.maxTokens).toBe(2048);
+        });
+
+        it('should NOT limit tokens for High RAM (>4GB)', () => {
+            const config: LLMConfig = { model: 'chat' };
+            const result = selector.selectMaxTokens('llm', config, heavySystem) as LLMConfig;
+            expect(result.maxTokens).toBeUndefined(); // Let model default apply
+        });
+
+        it('should respect manual maxTokens setting', () => {
+            const config: LLMConfig = { model: 'chat', maxTokens: 4096 };
+            const lowRAM: SystemCapabilities = { ...lightSystem, totalRAM: 1 * 1024 * 1024 * 1024 };
+            const result = selector.selectMaxTokens('llm', config, lowRAM) as LLMConfig;
+            expect(result.maxTokens).toBe(4096);
+        });
+
+        it('should ignore non-llm modalities', () => {
+            const config = { model: 'tts-1' };
+            // @ts-ignore
+            const result = selector.selectMaxTokens('tts', config, lightSystem);
+            expect(result).toBe(config);
+        });
+    });
 });

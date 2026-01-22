@@ -237,4 +237,47 @@ export class ModelSelector {
       threads,
     };
   }
+
+  /**
+   * Select max tokens based on RAM to prevent OOM
+   */
+  selectMaxTokens(
+    modality: Modality,
+    config: ModelConfig,
+    capabilities: SystemCapabilities
+  ): ModelConfig {
+    if (modality !== 'llm') return config;
+
+    // If maxTokens explicitly set, return
+    // Cast to LLMConfig to access maxTokens safely
+    const llmConfig = config as LLMConfig;
+    if (llmConfig.maxTokens != null) {
+      return config;
+    }
+
+    // Default maxTokens logic
+    let maxTokens: number | undefined = undefined; // undefined = model default (usually large)
+
+    const RAM_2GB = 2 * 1024 * 1024 * 1024;
+    const RAM_4GB = 4 * 1024 * 1024 * 1024;
+
+    // Safety limits for low RAM
+    if (capabilities.totalRAM < RAM_2GB) {
+      // Very low RAM -> strict limit
+      maxTokens = 1024;
+    } else if (capabilities.totalRAM < RAM_4GB) {
+      // Low RAM -> moderate limit
+      maxTokens = 2048;
+    }
+    // > 4GB -> No auto limit (let model decide or use system defaults)
+
+    if (maxTokens !== undefined) {
+      return {
+        ...config,
+        maxTokens,
+      };
+    }
+
+    return config;
+  }
 }
