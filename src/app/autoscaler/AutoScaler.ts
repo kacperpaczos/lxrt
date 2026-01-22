@@ -13,7 +13,6 @@ import type {
   STTConfig,
   EmbeddingConfig,
   Device,
-  DType,
 } from '../../core/types';
 import { BackendSelector } from '../backend/BackendSelector';
 import {
@@ -84,6 +83,14 @@ export class AutoScaler {
       capabilities
     );
 
+    // 3. Performance Mode Selection (Phase 3)
+    // Always resolve 'auto' performance mode
+    scaledConfig = this.modelSelector.selectPerformanceMode(
+      modality,
+      scaledConfig,
+      capabilities
+    );
+
     const partialConfig = scaledConfig as Partial<
       LLMConfig & TTSConfig & STTConfig & EmbeddingConfig
     >;
@@ -129,8 +136,6 @@ export class AutoScaler {
       return 'cpu';
     }
   }
-
-
 
   /**
    * Selects maximum number of tokens for LLM

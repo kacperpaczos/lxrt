@@ -53,7 +53,7 @@ export interface LLMConfig {
   model: LLMPreset | SupportedLLM | (string & {});
   dtype?: DType;
   device?: Device;
-  performanceMode?: 'auto' | 'fast' | 'quality';
+  performanceMode?: 'auto' | 'fast' | 'balanced' | 'quality';
   maxTokens?: number;
   temperature?: number;
   topP?: number;
@@ -98,7 +98,7 @@ export interface OCRConfig {
   dtype?: DType;
   device?: Device;
   language?: string | string[]; // e.g. 'eng', 'pol', ['eng', 'pol']
-  performanceMode?: 'auto' | 'fast' | 'quality';
+  performanceMode?: 'auto' | 'fast' | 'balanced' | 'quality';
 }
 
 // Unified ModelConfig type

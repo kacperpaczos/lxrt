@@ -130,4 +130,46 @@ describe('ModelSelector', () => {
             expect(result.dtype).toBe('q4');
         });
     });
+
+    describe('selectPerformanceMode', () => {
+        it('should select QUALITY for WebGPU + High RAM', () => {
+            const config: LLMConfig = { model: 'chat', performanceMode: 'auto' };
+            const result = selector.selectPerformanceMode('llm', config, heavySystem) as LLMConfig;
+            expect(result.performanceMode).toBe('quality');
+        });
+
+        it('should select BALANCED for WebGPU + Mid/Low RAM', () => {
+            const config: LLMConfig = { model: 'chat', performanceMode: 'auto' };
+            // Override heavy system to be GPU but low RAM for this test
+            const gpuLowRam: SystemCapabilities = { ...heavySystem, totalRAM: 4 * 1024 * 1024 * 1024 };
+
+            const result = selector.selectPerformanceMode('llm', config, gpuLowRam) as LLMConfig;
+            expect(result.performanceMode).toBe('balanced');
+        });
+
+        it('should select FAST for Browser CPU', () => {
+            const config: LLMConfig = { model: 'chat', performanceMode: 'auto' };
+            const result = selector.selectPerformanceMode('llm', config, lightSystem) as LLMConfig;
+            expect(result.performanceMode).toBe('fast');
+        });
+
+        it('should select BALANCED for Node Standard', () => {
+            const config: LLMConfig = { model: 'chat', performanceMode: 'auto' };
+            const nodeStandard: SystemCapabilities = {
+                platform: 'node',
+                hasWebGPU: false,
+                totalRAM: 8 * 1024 * 1024 * 1024,
+                cores: 8
+            };
+
+            const result = selector.selectPerformanceMode('llm', config, nodeStandard) as LLMConfig;
+            expect(result.performanceMode).toBe('balanced');
+        });
+
+        it('should respect manual setting', () => {
+            const config: LLMConfig = { model: 'chat', performanceMode: 'fast' };
+            const result = selector.selectPerformanceMode('llm', config, heavySystem) as LLMConfig;
+            expect(result.performanceMode).toBe('fast');
+        });
+    });
 });

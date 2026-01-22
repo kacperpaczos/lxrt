@@ -147,4 +147,57 @@ export class ModelSelector {
       dtype: selectedDtype,
     };
   }
+
+  /**
+   * Select best performance mode based on capabilities
+   */
+  selectPerformanceMode(
+    modality: Modality,
+    config: ModelConfig,
+    capabilities: SystemCapabilities
+  ): ModelConfig {
+    // If performanceMode is set and NOT 'auto', respect it
+    if (config.performanceMode && config.performanceMode !== 'auto') {
+      return config;
+    }
+
+    // Default strategy
+    let mode: 'fast' | 'balanced' | 'quality' = 'balanced';
+
+    // RAM constants
+    const RAM_8GB = 8 * 1024 * 1024 * 1024;
+    const RAM_16GB = 16 * 1024 * 1024 * 1024;
+
+    if (capabilities.hasWebGPU) {
+      // GPU available
+      if (capabilities.totalRAM >= RAM_8GB) {
+        // Great hardware -> prioritize quality
+        mode = 'quality';
+      } else {
+        // Good hardware but limited RAM -> balanced
+        mode = 'balanced';
+      }
+    } else {
+      // CPU / WASM
+      if (capabilities.platform === 'browser') {
+        // Browser WASM is generally slow compared to native or GPU
+        // Prioritize speed to ensure responsiveness
+        mode = 'fast';
+      } else {
+        // Node.js (more performant CPU execution usually)
+        if (capabilities.totalRAM >= RAM_16GB) {
+          // Powerful server/machine -> quality
+          mode = 'quality';
+        } else {
+          // Standard machine -> balanced
+          mode = 'balanced';
+        }
+      }
+    }
+
+    return {
+      ...config,
+      performanceMode: mode,
+    };
+  }
 }
