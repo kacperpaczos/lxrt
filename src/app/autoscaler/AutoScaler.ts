@@ -13,101 +13,131 @@ import type {
   STTConfig,
   EmbeddingConfig,
   Device,
-  DType,
 } from '../../core/types';
 import { BackendSelector } from '../backend/BackendSelector';
+import {
+  SystemCapabilitiesDetector,
+  SystemCapabilities,
+} from './SystemCapabilities';
+import { ModelSelector } from './ModelSelector';
+import { getConfig } from '../state';
 
 export class AutoScaler {
   private backendSelector: BackendSelector;
+  private capabilitiesDetector: SystemCapabilitiesDetector;
+  private modelSelector: ModelSelector;
 
   constructor(backendSelector?: BackendSelector) {
     this.backendSelector = backendSelector || new BackendSelector();
+    this.capabilitiesDetector = new SystemCapabilitiesDetector(
+      this.backendSelector
+    );
+    this.modelSelector = new ModelSelector();
   }
 
   /**
    * Main model configuration scaling method
    */
-  autoScale(modality: Modality, config: ModelConfig): ModelConfig {
+  async autoScale(
+    modality: Modality,
+    config: ModelConfig
+  ): Promise<ModelConfig> {
     const cfg = config as Partial<
       LLMConfig & TTSConfig & STTConfig & EmbeddingConfig
     > & {
       performanceMode?: 'auto' | 'fast' | 'quality';
+      autoTune?: boolean;
     };
 
-    // If performanceMode is not 'auto', don't scale
+    // If neither performanceMode='auto' nor autoTune=true, don't scale
     if (!this.shouldAutoScale(cfg)) {
       return config;
     }
 
-    // Create new configuration with default values
-    const scaledConfig: Partial<
+    // Detect capabilities (lazy load)
+    const capabilities = await this.capabilitiesDetector.detect();
+
+    // 1. Model Selection (Phase 1)
+    // If autoTune is enabled, try to select better model
+    let scaledConfig = { ...cfg } as ModelConfig;
+
+    if (cfg.autoTune) {
+      const logger = getConfig().logger;
+      logger.debug('[AutoScaler] Tuning model selection', {
+        modality,
+        capabilities,
+      });
+
+      scaledConfig = this.modelSelector.selectBestModel(
+        modality,
+        scaledConfig,
+        capabilities
+      );
+    }
+
+    // 2. Device/DType scaling (Phase 2+)
+    // Scale DType using ModelSelector (Phase 2)
+    scaledConfig = this.modelSelector.selectBestDType(
+      modality,
+      scaledConfig,
+      capabilities
+    );
+
+    // 3. Performance Mode Selection (Phase 3)
+    // Always resolve 'auto' performance mode
+    scaledConfig = this.modelSelector.selectPerformanceMode(
+      modality,
+      scaledConfig,
+      capabilities
+    );
+
+    // 4. Threads Selection (Phase 4)
+    scaledConfig = this.modelSelector.selectBestThreads(
+      modality,
+      scaledConfig,
+      capabilities
+    );
+
+    const partialConfig = scaledConfig as Partial<
       LLMConfig & TTSConfig & STTConfig & EmbeddingConfig
-    > = {
-      ...cfg,
-    };
+    >;
 
-    // Select device if not provided
-    if (!scaledConfig.device) {
-      scaledConfig.device = this.selectDevice();
+    // Select device if not provided (Device Selection Phase)
+    if (!partialConfig.device) {
+      partialConfig.device = this.selectDevice(capabilities);
     }
 
-    // Select dtype if not provided
-    if (!scaledConfig.dtype) {
-      scaledConfig.dtype = this.selectDType();
-    }
+    // Legacy selectDType fallckback removed as ModelSelector handles it now
 
-    // Select maxTokens for LLM if not provided
-    if (modality === 'llm') {
-      const llmConfig = scaledConfig as LLMConfig;
-      if (llmConfig.maxTokens == null) {
-        llmConfig.maxTokens = this.selectMaxTokens(modality);
-      }
-    }
+    // 5. Context/Tokens Limits (Phase 5)
+    scaledConfig = this.modelSelector.selectMaxTokens(
+      modality,
+      scaledConfig,
+      capabilities
+    );
 
-    return scaledConfig as ModelConfig;
+    return scaledConfig;
   }
 
   /**
    * Checks if configuration should be automatically scaled
    */
-  private shouldAutoScale(
-    config: Partial<LLMConfig & TTSConfig & STTConfig & EmbeddingConfig>
-  ): boolean {
-    // TTS doesn't have performanceMode, so don't scale automatically
-    if ('speaker' in config || 'sampleRate' in config) {
-      return false;
-    }
-    return config.performanceMode === 'auto';
+  private shouldAutoScale(config: {
+    performanceMode?: string;
+    autoTune?: boolean;
+  }): boolean {
+    return config.performanceMode === 'auto' || !!config.autoTune;
   }
 
   /**
    * Selects optimal device based on environment
    */
-  private selectDevice(): Device {
-    const env = this.backendSelector.detectEnvironment();
-
-    if (env.isBrowser) {
-      return env.hasWebGPU ? 'webgpu' : 'cpu';
+  private selectDevice(caps: SystemCapabilities): Device {
+    if (caps.platform === 'browser') {
+      return caps.hasWebGPU ? 'webgpu' : 'cpu'; // cpu actually means wasm in browser context usually
     } else {
       return 'cpu';
     }
-  }
-
-  /**
-   * Selects optimal data type
-   */
-  private selectDType(): DType {
-    return 'q4';
-  }
-
-  /**
-   * Selects maximum number of tokens for LLM
-   */
-  private selectMaxTokens(modality: Modality): number | undefined {
-    if (modality === 'llm') {
-      return 20;
-    }
-    return undefined;
   }
 
   /**
@@ -115,5 +145,9 @@ export class AutoScaler {
    */
   setBackendSelector(backendSelector: BackendSelector): void {
     this.backendSelector = backendSelector;
+    // Re-create detector with new selector
+    this.capabilitiesDetector = new SystemCapabilitiesDetector(
+      this.backendSelector
+    );
   }
 }

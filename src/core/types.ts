@@ -13,6 +13,22 @@ export type {
   VoiceProfileOptions,
 } from './VoiceProfile';
 
+import type {
+  SupportedLLM,
+  SupportedEmbedding,
+  SupportedSTT,
+  SupportedTTS,
+  SupportedOCR,
+} from './ModelRegistry';
+
+import type {
+  LLMPreset,
+  EmbeddingPreset,
+  STTPreset,
+  TTSPreset,
+  OCRPreset,
+} from './ModelPresets';
+
 // Supported modalities
 export type Modality = 'llm' | 'tts' | 'stt' | 'embedding' | 'ocr';
 
@@ -34,64 +50,70 @@ export interface Message {
 
 // LLM Configuration
 export interface LLMConfig {
-  model: string;
+  model: LLMPreset | SupportedLLM | (string & {});
   dtype?: DType;
   device?: Device;
-  performanceMode?: 'auto' | 'fast' | 'quality';
+  performanceMode?: 'auto' | 'fast' | 'balanced' | 'quality';
   maxTokens?: number;
   temperature?: number;
   topP?: number;
   topK?: number;
   repetitionPenalty?: number;
+  threads?: number;
 }
 
 // TTS Configuration
 export interface TTSConfig {
-  model: string;
+  model: TTSPreset | SupportedTTS | (string & {});
   dtype?: DType;
   device?: Device;
   speaker?: string | Float32Array;
   sampleRate?: number;
   voiceProfile?: string; // voice profile ID
   skip?: boolean; // Opcja do pomijania TTS
+  threads?: number;
 }
 
 // STT Configuration
 export interface STTConfig {
-  model: string;
+  model: STTPreset | SupportedSTT | (string & {});
   dtype?: DType;
   device?: Device;
   performanceMode?: 'auto' | 'fast' | 'quality';
   language?: string;
   task?: 'transcribe' | 'translate';
+  threads?: number;
 }
 
 // Embedding Configuration
 export interface EmbeddingConfig {
-  model: string;
+  model: EmbeddingPreset | SupportedEmbedding | (string & {});
   dtype?: DType;
   device?: Device;
   performanceMode?: 'auto' | 'fast' | 'quality';
   pooling?: 'mean' | 'cls';
   normalize?: boolean;
+  threads?: number;
 }
 
 // OCR Configuration
 export interface OCRConfig {
-  model?: string; // for compatibility (Tesseract uses its own models)
+  model?: OCRPreset | SupportedOCR | (string & {}); // for compatibility (Tesseract uses its own models)
   dtype?: DType;
   device?: Device;
   language?: string | string[]; // e.g. 'eng', 'pol', ['eng', 'pol']
-  performanceMode?: 'auto' | 'fast' | 'quality';
+  performanceMode?: 'auto' | 'fast' | 'balanced' | 'quality';
+  threads?: number;
 }
 
 // Unified ModelConfig type
-export type ModelConfig =
+export type ModelConfig = (
   | LLMConfig
   | TTSConfig
   | STTConfig
   | EmbeddingConfig
-  | OCRConfig;
+  | OCRConfig
+) & { autoTune?: boolean };
 
 // AI Provider Configuration
 export interface AIProviderConfig {

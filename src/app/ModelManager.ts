@@ -24,6 +24,7 @@ import { getConfig } from './state';
 import { ModelUnavailableError } from '@domain/errors';
 import { AutoScaler } from './autoscaler/AutoScaler';
 import { BackendSelector } from './backend/BackendSelector';
+import { resolveModelId } from '../core/ModelPresets';
 
 export interface ModelManagerOptions {
   skipCache?: boolean;
@@ -74,8 +75,15 @@ export class ModelManager {
       return dummyModel;
     }
 
+    // Resolve preset to actual model ID
+    const resolvedConfig = this.resolvePreset(modality, config);
+
     // Auto-scaler: optionally adjust config based on capabilities and performanceMode
-    const scaledConfig = this.autoScaler.autoScale(modality, config);
+    // Auto-scaler: optionally adjust config based on capabilities and performanceMode
+    const scaledConfig = await this.autoScaler.autoScale(
+      modality,
+      resolvedConfig
+    );
 
     // Check cache using scaled config (consistent with what we store)
     console.log(`[ModelManager] Checking cache for ${modality}:`, scaledConfig);
@@ -310,6 +318,34 @@ export class ModelManager {
    */
   getCache(): ModelCache {
     return this.cache;
+  }
+
+  /**
+   * Resolve preset name to actual model ID
+   */
+  private resolvePreset(modality: Modality, config: ModelConfig): ModelConfig {
+    if (!config.model) {
+      return config;
+    }
+
+    const resolvedModelId = resolveModelId(modality, config.model);
+
+    // If model ID changed (was a preset), create new config with resolved ID
+    if (resolvedModelId !== config.model) {
+      const logger = getConfig().logger;
+      logger.debug('[lxrt] preset resolved', {
+        modality,
+        preset: config.model,
+        modelId: resolvedModelId,
+      });
+
+      return {
+        ...config,
+        model: resolvedModelId,
+      };
+    }
+
+    return config;
   }
 
   /**

@@ -134,6 +134,94 @@ await provider.indexFiles([file1, file2]);
 const results = await provider.queryVectors('Jak działa AI?');
 ```
 
+### 🎯 Model Registry i Type Safety
+
+LXRT zapewnia **type-safe model registry** z auto-completion dla wspieranych modeli:
+
+```typescript
+import { createAIProvider, type SupportedLLM, MODEL_REGISTRY, getModelInfo } from 'lxrt';
+
+// ✅ Auto-completion dla znanych modeli
+const model: SupportedLLM = 'Xenova/Qwen1.5-0.5B-Chat';
+
+// ✅ Nadal można używać dowolnych stringów
+const customModel = 'my-org/my-custom-model';
+
+// Pobranie informacji o modelu
+const info = getModelInfo('llm', 'Xenova/Qwen1.5-0.5B-Chat');
+console.log(info?.contextWindow); // 32768
+console.log(info?.family); // 'qwen'
+
+// Przeglądanie wszystkich modeli
+console.log(MODEL_REGISTRY.llm);
+console.log(MODEL_REGISTRY.embedding);
+```
+
+### 🏷️ Model Presets (Semantic Naming)
+
+LXRT oferuje **presety** - semantyczne nazwy dla modeli, ułatwiające wybór odpowiedniego rozwiązania bez znania konkretnych ID.
+
+```typescript
+const provider = createAIProvider({
+  // Zamiast 'Xenova/Qwen1.5-0.5B-Chat'
+  llm: { model: 'chat-light' },
+  
+  // Zamiast 'Xenova/all-MiniLM-L6-v2'
+  embedding: { model: 'embedding-quality' },
+  
+  // Działa też 'fast', 'balanced', 'quality'
+  stt: { model: 'fast' }
+});
+```
+
+**Dostępne presety (LLM):**
+- `tiny` (<1GB, GPT-2)
+- `chat-light` (~2GB, Qwen 1.5 0.5B)
+- `chat-medium` (~4GB, Phi-3 Mini)
+- `chat-heavy` (>4GB, Gemma 2B)
+- `fast` / `balanced` / `quality`
+
+### 🎛️ Auto-Tuning (Inteligentny Wybór Modelu)
+
+LXRT potrafi **automatycznie dobrać najlepszy model** na podstawie Twojego sprzętu (RAM, GPU). Wystarczy dodać flagę `autoTune: true`:
+
+```typescript
+const provider = createAIProvider({
+  llm: { 
+    model: 'chat', // ogólna intencja
+    autoTune: true // pozwól na automatyczny dobór
+  }
+});
+
+// Wynik autotuningu:
+// - High-end PC (32GB RAM + GPU) -> 'chat-heavy' (Gemma 2B)
+// - Laptop (8GB RAM) -> 'chat-medium' (Phi-3 Mini)
+// - Słaby sprzęt / Browser -> 'chat-light' (Qwen 0.5B)
+```
+
+### 🔢 Liczenie Tokenów i Context Window
+
+```typescript
+const provider = createAIProvider({
+  llm: { model: 'Xenova/Qwen1.5-0.5B-Chat' }
+});
+
+await provider.warmup('llm');
+
+// Sprawdź rozmiar okna kontekstowego
+const contextWindow = provider.getContextWindow(); // 32768
+
+// Policz tokeny w tekście
+const text = 'To jest przykładowy tekst do analizy.';
+const tokenCount = provider.countTokens(text); // ~12
+
+// Upewnij się że tekst mieści się w oknie
+if (tokenCount > contextWindow - 512) {
+  // Obetnij tekst aby zmieścił się w limicie
+  console.warn('Tekst za długi, obcinanie...');
+}
+```
+
 ---
 
 ## Adaptery

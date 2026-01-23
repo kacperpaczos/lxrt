@@ -414,6 +414,41 @@ npx lxrt remove Xenova/Phi-3-mini-4k-instruct
 
 ---
 
+### 13. Brak Registry i Type-Safety dla modeli
+
+**Problem:**  
+Wszystkie konfiguracje modeli (`LLMConfig`, `STTConfig`) używają typu `string` dla pola `model`. Brak weryfikacji czy model istnieje oraz brak autouzupełniania w IDE.
+
+**Uzasadnienie:**  
+Programista musi znać dokładne ID modelu z Hugging Face (np. `Xenova/whisper-tiny`). Literówka powoduje błąd dopiero w runtime (przy próbie pobrania).
+
+**Jak to obeszliśmy:**  
+Ręczne wpisywanie stringów bez walidacji.
+
+**Proponowane rozwiązanie (Model Registry):**
+Implementacja podejścia "Registry + Type-Safety":
+- **Registry:** Centralny plik `src/core/ModelRegistry.ts` z definicjami przetestowanych modeli.
+- **Typy:** `type SupportedLLM = keyof typeof MODEL_REGISTRY.llm`.
+- **Hybrid types:** `model: SupportedLLM | (string & {})` - zapewnia autouzupełnianie dla znanych modeli, zachowując możliwość wpisania dowolnego stringa.
+
+**Estymowany nakład:** 2-3 dni
+
+---
+
+### 14. Robust Integration Testing (Prawdziwe modele + Determinizm)
+
+**Problem:**
+Testy integracyjne (np. STT -> LLM) są "flaky" (niestabilne) z powodu niedoskonałości małych modeli (Whisper Tiny) na syntetycznych danych lub szumie. Workaroundy (jak `if text == '!!!'`) są tymczasowe.
+
+**Rozwiązanie (Jak):**
+1.  **Golden Datasets:** Stworzenie repozytorium prawdziwych próbek audio (human voice, clear speech) zamiast generowanych/pustych.
+2.  **Semantic Assertions:** Weryfikacja poprawności nie przez `text.length > 0`, ale przez podobieństwo semantyczne (np. czy odpowiedź LLM ma sens w kontekście).
+3.  **Determinizm:** Ustawienie `seed` dla modeli (jeśli wspierane) oraz `temperature=0` w testach.
+
+**Estymowany nakład:** 2-3 dni
+
+---
+
 ## Podsumowanie Priorytetów
 
 | # | Zadanie | Priorytet | Nakład | Wpływ |
@@ -430,13 +465,66 @@ npx lxrt remove Xenova/Phi-3-mini-4k-instruct
 | 10 | Docs streaming | 🟢 Średni | 0.5 dnia | Niski |
 | 11 | Adaptery integracji | 🟢 Średni | 3 tygodnie | Średni |
 | 12 | CLI zarządzania | 🟢 Średni | 1 tydzień | Średni |
+| 13 | Model Registry & Types | 🟢 Średni | 2-3 dni | Średni |
+| 14 | **Robust Integration Testing** | 🟢 Średni | 2-3 dni | Średni |
 
 **Sugerowana kolejność na następny cykl:**
 1. Fix ONNX conflict + path aliases (szybkie wygrane)
 2. `countTokens()` + `getContextWindow()` (krytyczne dla UX)
-3. Abort/Cancel + typy eventów
-4. Dokumentacja streaming + przykłady
-5. WebGPU (długoterminowy, ale game-changer)
+3. **Robust Integration Testing** (blokuje CI/CD)
+4. Abort/Cancel + typy eventów
+5. Dokumentacja streaming + przykłady
+6. WebGPU (długoterminowy, ale game-changer)
+
+---
+
+## Przyszłe Rozszerzenia - Auto-Tuning System
+
+### Implementacja w Fazach (patrz: autotuning_plan.md)
+
+#### Faza 0: Model Presets ✅ ZAKOŃCZONE
+**Status:** Implementacja statycznych presetów (`chat-light`, `embedding-quality`)  
+**Cel:** Foundation dla auto-tuningu - semantic naming dla modeli  
+**Nakład:** 1-2 dni
+
+#### Faza 1-5: Auto-Tuning (Priorytetowe)
+
+| # | Funkcja | Priorytet | Nakład | Opis |
+|---|---------|-----------|--------|------|
+| 1 | **Model Selection** | 🔴 Bardzo wysoki | ✅ ZAKOŃCZONE | Auto-wybór modelu na podstawie RAM, GPU, platform |
+| 2 | **DType Selection** | 🔴 Wysoki | ✅ ZAKOŃCZONE | Auto kwantyzacja (fp16/q8/q4) na podstawie zasobów |
+| 3 | **Performance Mode** | 🟡 Średni | ✅ ZAKOŃCZONE | Auto fast/balanced/quality w zależności od środowiska |
+| 4 | **WASM Threads** | ✅ Już działa | ✅ ZAKOŃCZONE | Ulepszenia istniejącej logiki thread count |
+| 5 | **Context/Tokens Limits** | 🟢 Niski | ✅ ZAKOŃCZONE | Auto-limitowanie dla słabych systemów (OOM prevention) |
+
+**Total Faza 1-5:** ~8-12 dni roboczych
+
+#### Przyszłe Ulepszenia (Później)
+
+| # | Funkcja | Priorytet | Nakład | Opis |
+|---|---------|-----------|--------|------|
+| 6 | **Batch Size Tuning** | 🟡 Średni | 2-3 dni | Automatyczny batch size dla embeddings na podstawie RAM/GPU |
+| 7 | **Cache Strategy** | 🟢 Niski | 3-5 dni | Inteligentne zarządzanie cache (eviction, quota management) |
+| 8 | **Inference Params** | 🟢 Niski | 1-2 dni | Auto-tuning temperature, topK, topP dla różnych use-cases |
+
+**Przykładowe API po auto-tuningu:**
+```typescript
+const provider = createAIProvider({
+  llm: {
+    preset: 'chat',      // intencja użytkownika
+    autoTune: true       // auto: model + dtype + performance
+  }
+});
+
+// System automatycznie wybiera:
+// - Model: chat-light/medium/heavy na podstawie RAM & GPU  
+// - DType: fp16/q8/q4 na podstawie capabilities
+// - Performance: fast/balanced/quality
+// - Threads: optimal count
+// - MaxTokens: safe limits
+```
+
+**Więcej:** Szczegóły implementacji w `autotuning_plan.md` (artifact)
 
 ---
 
