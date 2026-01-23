@@ -71,6 +71,7 @@ export interface TTSConfig {
   sampleRate?: number;
   voiceProfile?: string; // voice profile ID
   skip?: boolean; // Opcja do pomijania TTS
+  performanceMode?: 'auto' | 'fast' | 'balanced' | 'quality';
   threads?: number;
 }
 
