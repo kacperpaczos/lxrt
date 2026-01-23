@@ -25,6 +25,7 @@ import { ModelUnavailableError } from '@domain/errors';
 import { AutoScaler } from './autoscaler/AutoScaler';
 import { BackendSelector } from './backend/BackendSelector';
 import { resolveModelId } from '../core/ModelPresets';
+import { isKnownModel } from '../core/ModelRegistry';
 
 export interface ModelManagerOptions {
   skipCache?: boolean;
@@ -77,6 +78,14 @@ export class ModelManager {
 
     // Resolve preset to actual model ID
     const resolvedConfig = this.resolvePreset(modality, config);
+
+    // Check if model is known in registry
+    const modelId = (resolvedConfig as ModelConfig).model;
+    if (modelId && !isKnownModel(modality, modelId)) {
+      getConfig().logger.warn(
+        `[ModelManager] Loading unknown model: ${modelId}. Requirements validation skipped.`
+      );
+    }
 
     // Auto-scaler: optionally adjust config based on capabilities and performanceMode
     // Auto-scaler: optionally adjust config based on capabilities and performanceMode

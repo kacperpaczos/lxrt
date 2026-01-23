@@ -465,10 +465,10 @@ Testy integracyjne (np. STT -> LLM) są "flaky" (niestabilne) z powodu niedoskon
 | 10 | Docs streaming | 🟢 Średni | ✅ DONE | Niski |
 | 11 | Adaptery integracji | 🟢 Średni | 3 tygodnie | Średni |
 | 12 | CLI zarządzania | 🟢 Średni | 1 tydzień | Średni |
-| 13 | Model Registry & Types | 🟢 Średni | 2-3 dni | Średni |
+| 13 | Model Registry & Types | 🟢 Średni | ✅ DONE | Średni |
 | 14 | **Robust Integration Testing** | 🟢 Średni | 2-3 dni | Średni |
-| 15 | Refactor `Error` to `ModelNotLoadedError` | 🟢 Niski | 0.5 dnia | Niski |
-| 16 | Unify error strings (constants) | 🟢 Niski | 0.5 dnia | Niski |
+| 15 | Refactor `Error` to `ModelNotLoadedError` | 🟢 Niski | ✅ DONE | Niski |
+| 16 | Unify error strings (constants) | 🟢 Niski | ✅ DONE | Niski |
 
 **Sugerowana kolejność na następny cykl:**
 1. Fix ONNX conflict + path aliases (szybkie wygrane)

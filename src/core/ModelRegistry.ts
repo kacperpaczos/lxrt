@@ -226,3 +226,23 @@ export function getDefaultModel(modality: Modality): string {
   }
   return '';
 }
+
+/**
+ * Get model requirements (RAM, GPU)
+ */
+export function getModelRequirements(
+  modality: Modality,
+  model: string
+): BaseModelInfo['requirements'] | undefined {
+  return getModelInfo(modality, model)?.requirements;
+}
+
+/**
+ * Get LLM model family
+ */
+export function getModelFamily(
+  model: string
+): LLMModelInfo['family'] | undefined {
+  const info = getModelInfo('llm', model);
+  return (info as LLMModelInfo)?.family;
+}

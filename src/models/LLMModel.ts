@@ -15,6 +15,8 @@ import { getConfig } from '../app/state';
 import { ModelLoadError, InferenceError } from '@domain/errors';
 import type { BackendSelector } from '../app/backend/BackendSelector';
 import { getModelInfo, MODEL_REGISTRY } from '../core/ModelRegistry';
+import { ModelNotLoadedError } from '@domain/errors';
+import { ERRORS } from '../core/error-messages';
 
 // Type definitions for LLM pipeline components
 interface LLMTokenizer {
@@ -574,8 +576,10 @@ export class LLMModel extends BaseModel<LLMConfig> {
    */
   countTokens(text: string): number {
     if (!this.loaded || !this.pipeline) {
-      throw new Error(
-        'Model must be loaded before counting tokens. Call warmup() first.'
+      throw new ModelNotLoadedError(
+        ERRORS.MODEL.NOT_LOADED('llm'),
+        this.config.model,
+        'llm'
       );
     }
 

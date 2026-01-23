@@ -27,6 +27,18 @@ describe('Model Registry', () => {
         const model: SupportedLLM = 'Xenova/Qwen1.5-0.5B-Chat';
         expect(model).toBe('Xenova/Qwen1.5-0.5B-Chat');
     });
+
+    it('should retrieve helper info', () => {
+        const { getModelRequirements, getModelFamily } = require('../../../src/core/ModelRegistry');
+
+        const reqs = getModelRequirements('llm', 'Xenova/Qwen1.5-0.5B-Chat');
+        expect(reqs).toEqual({ minRam: 2048 });
+
+        const family = getModelFamily('Xenova/Qwen1.5-0.5B-Chat');
+        expect(family).toBe('qwen');
+
+        expect(getModelFamily('unknown')).toBeUndefined();
+    });
 });
 
 describe('LLMModel Integration', () => {
