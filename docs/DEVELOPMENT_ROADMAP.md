@@ -453,9 +453,9 @@ Testy integracyjne (np. STT -> LLM) są "flaky" (niestabilne) z powodu niedoskon
 
 | # | Zadanie | Priorytet | Nakład | Wpływ |
 |---|---------|-----------|--------|-------|
-| 1 | `countTokens()` | 🔴 Krytyczny | 2-3 dni | Wysoki |
+| 1 | `countTokens()` | 🔴 Krytyczny | ✅ DONE | Wysoki |
 | 2 | WebGPU backend | 🔴 Krytyczny | 2-4 tyg | Bardzo wysoki |
-| 3 | `getContextWindow()` | 🔴 Krytyczny | 1-2 dni | Wysoki |
+| 3 | `getContextWindow()` | 🔴 Krytyczny | ✅ DONE | Wysoki |
 | 4 | Abort/Cancel | 🟡 Wysoki | 3-5 dni | Średni |
 | 5 | JSON Mode | 🟡 Wysoki | 1 tydzień | Wysoki |
 | 6 | Function Calling | 🟡 Wysoki | 2 tygodnie | Wysoki |

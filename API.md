@@ -439,6 +439,8 @@ const all = provider.getAllStatuses();
 
 ---
 
+---
+
 #### `dispose()`
 
 Zwalnia wszystkie zasoby.
@@ -446,6 +448,39 @@ Zwalnia wszystkie zasoby.
 ```typescript
 await provider.dispose();
 ```
+
+---
+
+### Metody Token Management
+
+#### `countTokens(text)`
+
+Zlicza tokeny w tekście używając tokenizera modelu LLM.
+
+**Wymagania:** Model musi być załadowany (`warmup('llm')`).
+
+```typescript
+await provider.warmup('llm');
+const count = provider.countTokens('Przykładowy tekst');
+console.log(count); // np. 5
+```
+
+**Zwraca:** `number`
+
+---
+
+#### `getContextWindow()`
+
+Zwraca rozmiar okna kontekstowego modelu LLM.
+
+**Wskazówka:** Użyj tej wartości, aby upewnić się, że Twój prompt (historia + nowe wiadomości) mieści się w limicie modelu.
+
+```typescript
+const contextSize = provider.getContextWindow();
+console.log(contextSize); // np. 32768
+```
+
+**Zwraca:** `number` (tokeny)
 
 ---
 

@@ -312,6 +312,11 @@ export class AIProvider {
   countTokens(text: string): number {
     const model = this.modelManager.getModel('llm');
     if (!model) {
+      if (this.config.llm) {
+        throw new Error(
+          'Model must be loaded before counting tokens. Call warmup() first.'
+        );
+      }
       throw new Error(
         'LLM model not configured. Add llm config to createAIProvider().'
       );
@@ -327,6 +332,11 @@ export class AIProvider {
   getContextWindow(): number {
     const model = this.modelManager.getModel('llm');
     if (!model) {
+      if (this.config.llm) {
+        throw new Error(
+          'Model must be loaded before getting context window. Call warmup() first.'
+        );
+      }
       throw new Error(
         'LLM model not configured. Add llm config to createAIProvider().'
       );
