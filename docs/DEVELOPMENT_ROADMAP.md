@@ -435,6 +435,20 @@ Implementacja podejścia "Registry + Type-Safety":
 
 ---
 
+### 14. Robust Integration Testing (Prawdziwe modele + Determinizm)
+
+**Problem:**
+Testy integracyjne (np. STT -> LLM) są "flaky" (niestabilne) z powodu niedoskonałości małych modeli (Whisper Tiny) na syntetycznych danych lub szumie. Workaroundy (jak `if text == '!!!'`) są tymczasowe.
+
+**Rozwiązanie (Jak):**
+1.  **Golden Datasets:** Stworzenie repozytorium prawdziwych próbek audio (human voice, clear speech) zamiast generowanych/pustych.
+2.  **Semantic Assertions:** Weryfikacja poprawności nie przez `text.length > 0`, ale przez podobieństwo semantyczne (np. czy odpowiedź LLM ma sens w kontekście).
+3.  **Determinizm:** Ustawienie `seed` dla modeli (jeśli wspierane) oraz `temperature=0` w testach.
+
+**Estymowany nakład:** 2-3 dni
+
+---
+
 ## Podsumowanie Priorytetów
 
 | # | Zadanie | Priorytet | Nakład | Wpływ |
@@ -452,13 +466,15 @@ Implementacja podejścia "Registry + Type-Safety":
 | 11 | Adaptery integracji | 🟢 Średni | 3 tygodnie | Średni |
 | 12 | CLI zarządzania | 🟢 Średni | 1 tydzień | Średni |
 | 13 | Model Registry & Types | 🟢 Średni | 2-3 dni | Średni |
+| 14 | **Robust Integration Testing** | 🟢 Średni | 2-3 dni | Średni |
 
 **Sugerowana kolejność na następny cykl:**
 1. Fix ONNX conflict + path aliases (szybkie wygrane)
 2. `countTokens()` + `getContextWindow()` (krytyczne dla UX)
-3. Abort/Cancel + typy eventów
-4. Dokumentacja streaming + przykłady
-5. WebGPU (długoterminowy, ale game-changer)
+3. **Robust Integration Testing** (blokuje CI/CD)
+4. Abort/Cancel + typy eventów
+5. Dokumentacja streaming + przykłady
+6. WebGPU (długoterminowy, ale game-changer)
 
 ---
 
