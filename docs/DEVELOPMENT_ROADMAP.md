@@ -467,6 +467,8 @@ Testy integracyjne (np. STT -> LLM) są "flaky" (niestabilne) z powodu niedoskon
 | 12 | CLI zarządzania | 🟢 Średni | 1 tydzień | Średni |
 | 13 | Model Registry & Types | 🟢 Średni | 2-3 dni | Średni |
 | 14 | **Robust Integration Testing** | 🟢 Średni | 2-3 dni | Średni |
+| 15 | Refactor `Error` to `ModelNotLoadedError` | 🟢 Niski | 0.5 dnia | Niski |
+| 16 | Unify error strings (constants) | 🟢 Niski | 0.5 dnia | Niski |
 
 **Sugerowana kolejność na następny cykl:**
 1. Fix ONNX conflict + path aliases (szybkie wygrane)
@@ -498,6 +500,53 @@ Testy integracyjne (np. STT -> LLM) są "flaky" (niestabilne) z powodu niedoskon
 | 5 | **Context/Tokens Limits** | 🟢 Niski | ✅ ZAKOŃCZONE | Auto-limitowanie dla słabych systemów (OOM prevention) |
 
 **Total Faza 1-5:** ~8-12 dni roboczych
+
+
+### Specyfikacja Refaktoryzacji (Zadania #15, #16)
+
+#### Zadanie #15: Refactor `Error` to `ModelNotLoadedError`
+
+**Cel:** Umożliwienie programistycznej obsługi błędów (np. auto-warmup po złapaniu błędu).
+
+**Wymagania:**
+1.  Stworzyć klasę `ModelNotLoadedError` w `src/domain/errors.ts`:
+    ```typescript
+    export class ModelNotLoadedError extends BaseError {
+      constructor(
+        message: string,
+        public modality: Modality,
+        public modelId?: string
+      ) {
+        super(message);
+        this.name = 'ModelNotLoadedError';
+      }
+    }
+    ```
+2.  **Use Cases (Gdzie użyć):**
+    *   `AIProvider.countTokens()` - gdy config istnieje, ale model nie loaded.
+    *   `AIProvider.getContextWindow()`
+    *   `AIProvider.chat()`, `speak()`, `listen()` - zastąpić obecne `ValidationError` lub generic `Error` tam, gdzie sprawdzany jest stan załadowania.
+
+#### Zadanie #16: Unify Error Strings
+
+**Cel:** Uniknięcie literówek i niespójnych komunikatów ("Model not loaded" vs "Load model first").
+
+**Wymagania:**
+1.  Utworzyć `src/core/error-messages.ts`:
+    ```typescript
+    export const ERRORS = {
+      MODEL: {
+        NOT_LOADED: (modality: string) => 
+          `Model for ${modality} must be loaded. Call warmup('${modality}') first.`,
+        NOT_CONFIGURED: (modality: string) =>
+          `${modality} not configured. Add config to createAIProvider().`,
+      },
+      // ...
+    } as const;
+    ```
+2.  Zastąpić hardcoded stringi w `AIProvider.ts` i `LLMModel.ts`.
+
+---
 
 #### Przyszłe Ulepszenia (Później)
 
