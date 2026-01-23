@@ -459,10 +459,10 @@ Testy integracyjne (np. STT -> LLM) są "flaky" (niestabilne) z powodu niedoskon
 | 4 | Abort/Cancel | 🟡 Wysoki | 3-5 dni | Średni |
 | 5 | JSON Mode | 🟡 Wysoki | 1 tydzień | Wysoki |
 | 6 | Function Calling | 🟡 Wysoki | 2 tygodnie | Wysoki |
-| 7 | Fix path aliases | 🟢 Średni | 0.5 dnia | Niski |
-| 8 | Fix ONNX conflict | 🟢 Średni | 0.5 dnia | Niski |
-| 9 | Typy eventów | 🟢 Średni | 0.5 dnia | Niski |
-| 10 | Docs streaming | 🟢 Średni | 0.5 dnia | Niski |
+| 7 | Fix path aliases | 🟢 Średni | ✅ DONE | Niski |
+| 8 | Fix ONNX conflict | 🟢 Średni | ✅ DONE | Niski |
+| 9 | Typy eventów | 🟢 Średni | ✅ DONE | Niski |
+| 10 | Docs streaming | 🟢 Średni | ✅ DONE | Niski |
 | 11 | Adaptery integracji | 🟢 Średni | 3 tygodnie | Średni |
 | 12 | CLI zarządzania | 🟢 Średni | 1 tydzień | Średni |
 | 13 | Model Registry & Types | 🟢 Średni | 2-3 dni | Średni |

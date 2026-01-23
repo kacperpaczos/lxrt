@@ -126,7 +126,18 @@ const text = await provider.complete('Napisz wiersz o:', {
 
 #### `stream(messages, options?)`
 
-Streaming odpowiedzi token po tokenie.
+Streaming odpowiedzi token po tokenie (AsyncGenerator).
+
+**Parametry:**
+
+| Nazwa | Typ | Opis |
+|-------|-----|------|
+| `messages` | `Message[] \| string` | Wiadomości lub pojedynczy tekst |
+| `options` | `ChatOptions` | Opcje generacji (jak w `chat()`) |
+
+**Zwraca:** `AsyncGenerator<string>` - kolejne tokeny odpowiedzi
+
+**Podstawowy przykład:**
 
 ```typescript
 for await (const token of provider.stream('Opowiedz historię')) {
@@ -134,7 +145,39 @@ for await (const token of provider.stream('Opowiedz historię')) {
 }
 ```
 
-**Zwraca:** `AsyncGenerator<string>`
+**Z timeout i error handling:**
+
+```typescript
+const controller = new AbortController();
+const timeout = setTimeout(() => controller.abort(), 30000);
+
+try {
+  let fullResponse = '';
+  for await (const token of provider.stream(messages)) {
+    process.stdout.write(token);
+    fullResponse += token;
+  }
+  console.log('\n\nFull response:', fullResponse);
+} catch (error) {
+  if (error.name === 'AbortError') {
+    console.log('Streaming anulowany (timeout)');
+  } else {
+    console.error('Błąd streamingu:', error);
+  }
+} finally {
+  clearTimeout(timeout);
+}
+```
+
+**Zbieranie odpowiedzi do stringa:**
+
+```typescript
+const tokens: string[] = [];
+for await (const token of provider.stream('Napisz wiersz')) {
+  tokens.push(token);
+}
+const fullText = tokens.join('');
+```
 
 ---
 
