@@ -21,7 +21,7 @@ import { EmbeddingModel } from '../models/EmbeddingModel';
 import { OCRModel } from '../models/OCRModel';
 import { EventEmitter } from '@infra/events/EventEmitter';
 import { getConfig } from './state';
-import { ModelUnavailableError } from '@domain/errors';
+import { ModelUnavailableError, ModelLoadError } from '@domain/errors';
 import { AutoScaler } from './autoscaler/AutoScaler';
 import { BackendSelector } from './backend/BackendSelector';
 import { resolveModelId } from '../core/ModelPresets';
@@ -163,11 +163,20 @@ export class ModelManager {
       return model;
     } catch (error) {
       const err = error instanceof Error ? error : new Error(String(error));
+
+      // Wrap in ModelLoadError
+      const loadError = new ModelLoadError(
+        `Failed to load model ${(scaledConfig as ModelConfig).model}: ${err.message}`,
+        (scaledConfig as ModelConfig).model as string,
+        modality,
+        err
+      );
+
       this.eventEmitter.emit('error', {
         modality,
-        error: err,
+        error: loadError,
       });
-      throw error;
+      throw loadError;
     }
   }
 

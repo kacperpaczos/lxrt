@@ -466,15 +466,19 @@ Testy integracyjne (np. STT -> LLM) są "flaky" (niestabilne) z powodu niedoskon
 | 11 | Adaptery integracji | 🟢 Średni | 3 tygodnie | Średni |
 | 12 | CLI zarządzania | 🟢 Średni | 1 tydzień | Średni |
 | 13 | Model Registry & Types | 🟢 Średni | ✅ DONE | Średni |
-| 14 | **Robust Integration Testing** | 🟢 Średni | 2-3 dni | Średni |
+| 14 | **Robust Integration Testing** | 🟢 Średni | ✅ DONE | Średni |
 | 15 | Refactor `Error` to `ModelNotLoadedError` | 🟢 Niski | ✅ DONE | Niski |
 | 16 | Unify error strings (constants) | 🟢 Niski | ✅ DONE | Niski |
+| 17 | **Test Quality Review & Rewrite** | 🟢 Średni | 2-3 dni | Średni |
+| 18 | **Stagehand Interface** | 🟢 Średni | 2 dni | Wysoki |
 
 **Sugerowana kolejność na następny cykl:**
 1. Fix ONNX conflict + path aliases (szybkie wygrane)
 2. `countTokens()` + `getContextWindow()` (krytyczne dla UX)
 3. **Robust Integration Testing** (blokuje CI/CD)
-4. Abort/Cancel + typy eventów
+4. **Stagehand Interface** (Ważne dla integracji)
+5. **Test Quality Review** (Dług techniczny)
+6. Abort/Cancel + typy eventów
 5. Dokumentacja streaming + przykłady
 6. WebGPU (długoterminowy, ale game-changer)
 
