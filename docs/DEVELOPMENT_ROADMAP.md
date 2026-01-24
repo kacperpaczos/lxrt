@@ -469,8 +469,8 @@ Testy integracyjne (np. STT -> LLM) są "flaky" (niestabilne) z powodu niedoskon
 | 14 | **Robust Integration Testing** | 🟢 Średni | ✅ DONE | Średni |
 | 15 | Refactor `Error` to `ModelNotLoadedError` | 🟢 Niski | ✅ DONE | Niski |
 | 16 | Unify error strings (constants) | 🟢 Niski | ✅ DONE | Niski |
-| 17 | **Test Quality Review & Rewrite** | 🟢 Średni | 2-3 dni | Średni |
-| 18 | **Stagehand Interface** | 🟢 Średni | 2 dni | Wysoki |
+| 17 | **Test Quality Review & Rewrite** | 🟢 Średni | ✅ DONE | Średni |
+| 18 | **Stagehand Interface** | 🟢 Średni | ✅ DONE | Wysoki |
 
 **Sugerowana kolejność na następny cykl:**
 1. Fix ONNX conflict + path aliases (szybkie wygrane)
