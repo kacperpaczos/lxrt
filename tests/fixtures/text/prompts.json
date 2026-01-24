@@ -1,0 +1,14 @@
+{
+  "prompts": [
+    {
+      "id": "greeting",
+      "input": "Hello, world!",
+      "expectedIntent": "greeting"
+    },
+    {
+      "id": "math",
+      "input": "What is 2+2?",
+      "expectedAnswerContains": "4"
+    }
+  ]
+}
