@@ -1,0 +1,32 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LXRT Browser Test</title>
+</head>
+<body>
+    <h1>LXRT Browser Environment Test</h1>
+    <div id="status">Loading...</div>
+    <div id="output"></div>
+
+    <!-- Load the library bundle -->
+    <!-- Assuming "npm run build" creates dist/lxrt.js or index.js -->
+    <!-- We might need to verify what the build output is. -->
+    <script type="module">
+        import { init, createAIProvider, AIProvider } from '/dist/index.js';
+        
+        // Expose to Playwright
+        window.lxrt = {
+            init,
+            createAIProvider,
+            AIProvider
+        };
+
+        document.getElementById('status').innerText = 'Library Loaded (Waiting for init)';
+        
+        console.log('LXRT available on window.lxrt');
+    </script>
+</body>
+</html>

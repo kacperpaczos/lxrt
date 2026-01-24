@@ -21,10 +21,11 @@ import { EmbeddingModel } from '../models/EmbeddingModel';
 import { OCRModel } from '../models/OCRModel';
 import { EventEmitter } from '@infra/events/EventEmitter';
 import { getConfig } from './state';
-import { ModelUnavailableError } from '@domain/errors';
+import { ModelUnavailableError, ModelLoadError } from '@domain/errors';
 import { AutoScaler } from './autoscaler/AutoScaler';
 import { BackendSelector } from './backend/BackendSelector';
 import { resolveModelId } from '../core/ModelPresets';
+import { isKnownModel } from '../core/ModelRegistry';
 
 export interface ModelManagerOptions {
   skipCache?: boolean;
@@ -77,6 +78,14 @@ export class ModelManager {
 
     // Resolve preset to actual model ID
     const resolvedConfig = this.resolvePreset(modality, config);
+
+    // Check if model is known in registry
+    const modelId = (resolvedConfig as ModelConfig).model;
+    if (modelId && !isKnownModel(modality, modelId)) {
+      getConfig().logger.warn(
+        `[ModelManager] Loading unknown model: ${modelId}. Requirements validation skipped.`
+      );
+    }
 
     // Auto-scaler: optionally adjust config based on capabilities and performanceMode
     // Auto-scaler: optionally adjust config based on capabilities and performanceMode
@@ -154,11 +163,20 @@ export class ModelManager {
       return model;
     } catch (error) {
       const err = error instanceof Error ? error : new Error(String(error));
+
+      // Wrap in ModelLoadError
+      const loadError = new ModelLoadError(
+        `Failed to load model ${(scaledConfig as ModelConfig).model}: ${err.message}`,
+        (scaledConfig as ModelConfig).model as string,
+        modality,
+        err
+      );
+
       this.eventEmitter.emit('error', {
         modality,
-        error: err,
+        error: loadError,
       });
-      throw error;
+      throw loadError;
     }
   }
 

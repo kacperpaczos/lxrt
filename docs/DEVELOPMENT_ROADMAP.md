@@ -453,9 +453,9 @@ Testy integracyjne (np. STT -> LLM) są "flaky" (niestabilne) z powodu niedoskon
 
 | # | Zadanie | Priorytet | Nakład | Wpływ |
 |---|---------|-----------|--------|-------|
-| 1 | `countTokens()` | 🔴 Krytyczny | 2-3 dni | Wysoki |
+| 1 | `countTokens()` | 🔴 Krytyczny | ✅ DONE | Wysoki |
 | 2 | WebGPU backend | 🔴 Krytyczny | 2-4 tyg | Bardzo wysoki |
-| 3 | `getContextWindow()` | 🔴 Krytyczny | 1-2 dni | Wysoki |
+| 3 | `getContextWindow()` | 🔴 Krytyczny | ✅ DONE | Wysoki |
 | 4 | Abort/Cancel | 🟡 Wysoki | 3-5 dni | Średni |
 | 5 | JSON Mode | 🟡 Wysoki | 1 tydzień | Wysoki |
 | 6 | Function Calling | 🟡 Wysoki | 2 tygodnie | Wysoki |
@@ -465,14 +465,20 @@ Testy integracyjne (np. STT -> LLM) są "flaky" (niestabilne) z powodu niedoskon
 | 10 | Docs streaming | 🟢 Średni | ✅ DONE | Niski |
 | 11 | Adaptery integracji | 🟢 Średni | 3 tygodnie | Średni |
 | 12 | CLI zarządzania | 🟢 Średni | 1 tydzień | Średni |
-| 13 | Model Registry & Types | 🟢 Średni | 2-3 dni | Średni |
-| 14 | **Robust Integration Testing** | 🟢 Średni | 2-3 dni | Średni |
+| 13 | Model Registry & Types | 🟢 Średni | ✅ DONE | Średni |
+| 14 | **Robust Integration Testing** | 🟢 Średni | ✅ DONE | Średni |
+| 15 | Refactor `Error` to `ModelNotLoadedError` | 🟢 Niski | ✅ DONE | Niski |
+| 16 | Unify error strings (constants) | 🟢 Niski | ✅ DONE | Niski |
+| 17 | **Test Quality Review & Rewrite** | 🟢 Średni | ✅ DONE | Średni |
+| 18 | **Stagehand Interface** | 🟢 Średni | ✅ DONE | Wysoki |
 
 **Sugerowana kolejność na następny cykl:**
 1. Fix ONNX conflict + path aliases (szybkie wygrane)
 2. `countTokens()` + `getContextWindow()` (krytyczne dla UX)
 3. **Robust Integration Testing** (blokuje CI/CD)
-4. Abort/Cancel + typy eventów
+4. **Stagehand Interface** (Ważne dla integracji)
+5. **Test Quality Review** (Dług techniczny)
+6. Abort/Cancel + typy eventów
 5. Dokumentacja streaming + przykłady
 6. WebGPU (długoterminowy, ale game-changer)
 
@@ -498,6 +504,53 @@ Testy integracyjne (np. STT -> LLM) są "flaky" (niestabilne) z powodu niedoskon
 | 5 | **Context/Tokens Limits** | 🟢 Niski | ✅ ZAKOŃCZONE | Auto-limitowanie dla słabych systemów (OOM prevention) |
 
 **Total Faza 1-5:** ~8-12 dni roboczych
+
+
+### Specyfikacja Refaktoryzacji (Zadania #15, #16)
+
+#### Zadanie #15: Refactor `Error` to `ModelNotLoadedError`
+
+**Cel:** Umożliwienie programistycznej obsługi błędów (np. auto-warmup po złapaniu błędu).
+
+**Wymagania:**
+1.  Stworzyć klasę `ModelNotLoadedError` w `src/domain/errors.ts`:
+    ```typescript
+    export class ModelNotLoadedError extends BaseError {
+      constructor(
+        message: string,
+        public modality: Modality,
+        public modelId?: string
+      ) {
+        super(message);
+        this.name = 'ModelNotLoadedError';
+      }
+    }
+    ```
+2.  **Use Cases (Gdzie użyć):**
+    *   `AIProvider.countTokens()` - gdy config istnieje, ale model nie loaded.
+    *   `AIProvider.getContextWindow()`
+    *   `AIProvider.chat()`, `speak()`, `listen()` - zastąpić obecne `ValidationError` lub generic `Error` tam, gdzie sprawdzany jest stan załadowania.
+
+#### Zadanie #16: Unify Error Strings
+
+**Cel:** Uniknięcie literówek i niespójnych komunikatów ("Model not loaded" vs "Load model first").
+
+**Wymagania:**
+1.  Utworzyć `src/core/error-messages.ts`:
+    ```typescript
+    export const ERRORS = {
+      MODEL: {
+        NOT_LOADED: (modality: string) => 
+          `Model for ${modality} must be loaded. Call warmup('${modality}') first.`,
+        NOT_CONFIGURED: (modality: string) =>
+          `${modality} not configured. Add config to createAIProvider().`,
+      },
+      // ...
+    } as const;
+    ```
+2.  Zastąpić hardcoded stringi w `AIProvider.ts` i `LLMModel.ts`.
+
+---
 
 #### Przyszłe Ulepszenia (Później)
 

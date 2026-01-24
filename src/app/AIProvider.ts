@@ -18,7 +18,8 @@ import type {
   EventCallback,
   ModelStatus,
 } from '../core/types';
-import { ValidationError } from '@domain/errors';
+import { ValidationError, ModelNotLoadedError } from '@domain/errors';
+import { ERRORS } from '../core/error-messages';
 import { ModelManager } from './ModelManager';
 import { EventEmitter } from '@infra/events/EventEmitter';
 import { LLMModel } from '../models/LLMModel';
@@ -312,9 +313,14 @@ export class AIProvider {
   countTokens(text: string): number {
     const model = this.modelManager.getModel('llm');
     if (!model) {
-      throw new Error(
-        'LLM model not configured. Add llm config to createAIProvider().'
-      );
+      if (this.config.llm) {
+        throw new ModelNotLoadedError(
+          ERRORS.MODEL.NOT_LOADED('llm'),
+          this.config.llm.model,
+          'llm'
+        );
+      }
+      throw new ValidationError(ERRORS.MODEL.NOT_CONFIGURED('llm'), 'llm');
     }
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     return (model as any).countTokens(text);
@@ -327,9 +333,14 @@ export class AIProvider {
   getContextWindow(): number {
     const model = this.modelManager.getModel('llm');
     if (!model) {
-      throw new Error(
-        'LLM model not configured. Add llm config to createAIProvider().'
-      );
+      if (this.config.llm) {
+        throw new ModelNotLoadedError(
+          ERRORS.MODEL.NOT_LOADED('llm'),
+          this.config.llm.model,
+          'llm'
+        );
+      }
+      throw new ValidationError(ERRORS.MODEL.NOT_CONFIGURED('llm'), 'llm');
     }
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     return (model as any).getContextWindow();

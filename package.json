@@ -66,6 +66,8 @@
     "test:model": "jest --config jest.node.config.js --testPathPattern=\"model\"",
     "serve:e2e": "node tests/e2e/server.js",
     "serve:browser": "node tests/integration-browser/server.mjs",
+    "test:e2e": "playwright test",
+    "test:browser": "npm run test:e2e",
     "lint": "eslint 'src/**/*.ts' --ignore-pattern 'src/**/*.test.ts'",
     "lint:fix": "eslint 'src/**/*.ts' --ignore-pattern 'src/**/*.test.ts' --fix",
     "format": "prettier --write 'src/**/*.{ts,js,json,md}'",

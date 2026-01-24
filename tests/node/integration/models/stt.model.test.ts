@@ -6,10 +6,11 @@ import { createAIProvider, init } from '../../../../src/index';
 import { readFileSync } from 'node:fs';
 import * as path from 'node:path';
 import { createTestLogger, measureAsync } from '../helpers/test-logger';
+import { FixtureLoader } from '../../../utils/FixtureLoader';
 
 describe('STT Model (Node + ORT)', () => {
   const logger = createTestLogger('STT Model');
-  
+
   const provider = createAIProvider({
     stt: {
       model: 'Xenova/whisper-tiny',
@@ -22,7 +23,7 @@ describe('STT Model (Node + ORT)', () => {
     logger.logTestStart('STT Model integration tests');
     logger.logStep('Initializing transformers');
     await measureAsync(logger, 'init', () => init());
-    
+
     logger.logModelLoad('stt', 'Xenova/whisper-tiny', { dtype: 'fp32', device: 'cpu' });
     await measureAsync(logger, 'warmup-stt', () => provider.warmup('stt'));
   });
@@ -34,31 +35,31 @@ describe('STT Model (Node + ORT)', () => {
   });
 
   it('transcribes short WAV from fixtures', async () => {
-    const wavPath = path.join(__dirname, '../../../fixtures/audio/test.wav');
-    logger.logInput('audioFile', wavPath);
-    
+    const filename = 'test.wav';
+    if (!FixtureLoader.exists('audio', filename)) {
+      logger.logStep('Skipping STT test: Missing fixture');
+      return;
+    }
+    logger.logInput('audioFile', filename);
+
     logger.logStep('Loading audio file');
-    const buf = readFileSync(wavPath);
-    logger.logOutput('bufferSize', `${buf.length} bytes`);
-    
-    // Convert buffer to Float32Array for Node.js environment
-    const audioData = new Float32Array(buf.buffer, buf.byteOffset, buf.byteLength / 4);
+    const audioData = FixtureLoader.getAudioFloat32(filename);
     logger.logOutput('audioDataLength', `${audioData.length} samples`);
-    
-    logger.logApiCall('provider.listen()', { 
-      audioDataLength: audioData.length, 
-      options: { language: 'en', task: 'transcribe' } 
+
+    logger.logApiCall('provider.listen()', {
+      audioDataLength: audioData.length,
+      options: { language: 'en', task: 'transcribe' }
     });
-    
-    const text = await measureAsync(logger, 'listen', () => 
+
+    const text = await measureAsync(logger, 'listen', () =>
       provider.listen(audioData, { language: 'en', task: 'transcribe' })
     );
-    
+
     logger.logOutput('transcription', text);
-    
+
     expect(typeof text).toBe('string');
     expect(text.length).toBeGreaterThan(0);
-    
+
     console.log(`✅ STT transcribed: "${text}"`);
   }, 180000);
 });

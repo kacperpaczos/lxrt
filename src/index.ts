@@ -19,6 +19,7 @@ export {
   createLangChainLLM,
   createLangChainEmbeddings,
 } from './adapters/LangChainAdapter';
+export { StagehandAdapter } from './adapters/StagehandAdapter';
 
 // Models (for advanced usage)
 export { LLMModel } from './models/LLMModel';
