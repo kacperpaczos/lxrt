@@ -3,9 +3,12 @@
  */
 
 import type { Modality, ModelConfig } from '../core/types';
+import type { IModel } from '@domain/models';
 import { ModelNotLoadedError } from '@domain/errors';
 
-export abstract class BaseModel<TConfig extends ModelConfig = ModelConfig> {
+export abstract class BaseModel<TConfig extends ModelConfig = ModelConfig>
+  implements IModel
+{
   protected pipeline: unknown | null = null;
   protected config: TConfig;
   protected modality: Modality;

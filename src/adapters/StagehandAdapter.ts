@@ -23,7 +23,7 @@ export class StagehandAdapter {
     create: (params: {
       input: string | string[];
       model?: string;
-    }) => Promise<any>;
+    }) => Promise<{ data: Array<{ embedding: number[]; index: number }> }>;
   };
 
   /**

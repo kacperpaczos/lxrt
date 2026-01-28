@@ -98,6 +98,7 @@ export function useVectorization(
     [];
 
   const { config, autoInitialize = false } = options;
+  const abortControllers = new Map<string, AbortController>();
 
   // Initialize vectorization service
   const initialize = async () => {
@@ -235,9 +236,14 @@ export function useVectorization(
     return wrapper();
   };
 
-  // Cancel job
+  // Cancel job with AbortController
   const cancelJob = (jobId: string) => {
-    // TODO: Implement job cancellation
+    const controller = abortControllers.get(jobId);
+    if (controller) {
+      controller.abort();
+      abortControllers.delete(jobId);
+      console.log(`[useVectorization] Cancelled job: ${jobId}`);
+    }
     isProcessing.value = false;
     currentJob.value = null;
     currentProgress.value = 0;

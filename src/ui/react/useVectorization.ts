@@ -83,6 +83,7 @@ export function useVectorization(
   const isInitializedRef = useRef(false);
   const isInitializingRef = useRef(false);
   const eventListenersRef = useRef<Map<string, (() => void) | null>>(new Map());
+  const abortControllersRef = useRef<Map<string, AbortController>>(new Map());
   const { config, autoInitialize = false } = options;
 
   const setupEventListeners = useCallback((prov: AIProvider) => {
@@ -227,9 +228,14 @@ export function useVectorization(
     return wrapper();
   }, []);
 
-  // Cancel job
+  // Cancel job with AbortController
   const cancelJob = useCallback((jobId: string) => {
-    // TODO: Implement job cancellation
+    const controller = abortControllersRef.current.get(jobId);
+    if (controller) {
+      controller.abort();
+      abortControllersRef.current.delete(jobId);
+      console.log(`[useVectorization] Cancelled job: ${jobId}`);
+    }
     setIsProcessing(false);
     setCurrentJob(null);
     setCurrentProgress(0);
