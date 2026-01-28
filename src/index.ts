@@ -170,7 +170,21 @@ export {
   InferenceError,
   InitializationError,
   ConfigurationError,
+  // New error infrastructure
+  ErrorPattern,
+  LxrtError,
+  isLxrtError,
+  hasErrorPattern,
 } from './domain/errors';
+
+// Logging infrastructure
+export { getLogBus, createLogBus, resetLogBus } from './core/logging/LogBus';
+export type {
+  ILogBus,
+  LogEntry,
+  LogLevel,
+  LogSubscriber,
+} from './core/logging/LogBus';
 
 // Domain model contracts
 export type {
