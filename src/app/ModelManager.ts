@@ -38,6 +38,7 @@ export class ModelManager {
   private eventEmitter: EventEmitter;
   private autoScaler: AutoScaler;
   private backendSelector: BackendSelector;
+  private loadingPromises: Map<string, Promise<BaseModel>> = new Map();
 
   constructor(eventEmitter: EventEmitter, options?: ModelManagerOptions) {
     this.cache = new ModelCache({ skipCache: options?.skipCache });
@@ -52,7 +53,17 @@ export class ModelManager {
    * Load a model for a specific modality
    */
   async loadModel(modality: Modality, config: ModelConfig): Promise<BaseModel> {
-    // Check if model is already loaded with the same config
+    // Generate a unique key for this modality+model combination
+    const loadKey = `${modality}:${config.model}`;
+
+    // Check if a load is already in progress for this modality+model
+    const existingLoadPromise = this.loadingPromises.get(loadKey);
+    if (existingLoadPromise) {
+      console.log(`[ModelManager] Awaiting existing load for ${loadKey}`);
+      return existingLoadPromise;
+    }
+
+    // Check if model is already loaded with the same config (SYNCHRONOUS)
     const existingModel = this.models.get(modality);
     if (existingModel && this.isSameConfig(modality, config)) {
       // Ensure cache is populated even if model remained loaded while cache was cleared
@@ -64,7 +75,7 @@ export class ModelManager {
       return existingModel;
     }
 
-    // Sprawdź, czy TTS ma ustawioną flagę skip - zwróć dummy model
+    // Sprawdź, czy TTS ma ustawioną flagę skip - zwróć dummy model (SYNCHRONOUS)
     if (modality === 'tts' && (config as TTSConfig).skip) {
       // Utwórz dummy model, który będzie ignorował wszystkie wywołania
       const dummyModel = new TTSModel(
@@ -76,108 +87,131 @@ export class ModelManager {
       return dummyModel;
     }
 
-    // Resolve preset to actual model ID
-    const resolvedConfig = this.resolvePreset(modality, config);
+    // Create deferred promise and store SYNCHRONOUSLY - BEFORE any await!
+    let resolveLoad: (model: BaseModel) => void;
+    let rejectLoad: (error: Error) => void;
+    const loadPromise = new Promise<BaseModel>((resolve, reject) => {
+      resolveLoad = resolve;
+      rejectLoad = reject;
+    });
 
-    // Check if model is known in registry
-    const modelId = (resolvedConfig as ModelConfig).model;
-    if (modelId && !isKnownModel(modality, modelId)) {
-      getConfig().logger.warn(
-        `[ModelManager] Loading unknown model: ${modelId}. Requirements validation skipped.`
-      );
-    }
+    // Store immediately so concurrent calls can await this promise
+    this.loadingPromises.set(loadKey, loadPromise);
+    console.log(`[ModelManager] Stored loadingPromise for ${loadKey}`);
 
-    // Auto-scaler: optionally adjust config based on capabilities and performanceMode
-    // Auto-scaler: optionally adjust config based on capabilities and performanceMode
-    const scaledConfig = await this.autoScaler.autoScale(
-      modality,
-      resolvedConfig
-    );
+    // Execute all async work inside the deferred promise
+    (async () => {
+      try {
+        // Resolve preset to actual model ID
+        const resolvedConfig = this.resolvePreset(modality, config);
 
-    // Check cache using scaled config (consistent with what we store)
-    console.log(`[ModelManager] Checking cache for ${modality}:`, scaledConfig);
-    const cached = this.cache.get(modality, scaledConfig);
-    if (cached) {
-      const model = this.createModelInstance(modality, scaledConfig);
-      // Restore from cache - cache.get() returns pipeline directly, not {pipeline: ...}
-      model.setPipeline(cached);
-      this.models.set(modality, model);
-      this.configs.set(modality, scaledConfig);
-      return model;
-    }
-    if (scaledConfig !== config) {
-      const logger = getConfig().logger;
-      logger.debug('[lxrt] autoscale', {
-        modality,
-        from: config,
-        to: scaledConfig,
-      });
-    }
+        // Check if model is known in registry
+        const modelId = (resolvedConfig as ModelConfig).model;
+        if (modelId && !isKnownModel(modality, modelId)) {
+          getConfig().logger.warn(
+            `[ModelManager] Loading unknown model: ${modelId}. Requirements validation skipped.`
+          );
+        }
 
-    // Create and load new model
-    const model = this.createModelInstance(modality, scaledConfig);
+        // Auto-scaler: optionally adjust config based on capabilities and performanceMode
+        const scaledConfig = await this.autoScaler.autoScale(
+          modality,
+          resolvedConfig
+        );
 
-    // Create progress callback
-    const progressCallback = (progress: {
-      status: string;
-      file?: string;
-      progress?: number;
-      loaded?: number;
-      total?: number;
-    }) => {
-      // Map status to expected enum values
-      const mappedStatus = this.mapStatus(progress.status);
-      this.eventEmitter.emit('progress', {
-        modality,
-        model: (scaledConfig as ModelConfig).model!,
-        file: progress.file,
-        progress: progress.progress,
-        loaded: progress.loaded,
-        total: progress.total,
-        status: mappedStatus,
-      });
-    };
+        // Check cache using scaled config (consistent with what we store)
+        console.log(
+          `[ModelManager] Checking cache for ${modality}:`,
+          scaledConfig
+        );
+        const cached = this.cache.get(modality, scaledConfig);
+        if (cached) {
+          const model = this.createModelInstance(modality, scaledConfig);
+          // Restore from cache - cache.get() returns pipeline directly, not {pipeline: ...}
+          model.setPipeline(cached);
+          this.models.set(modality, model);
+          this.configs.set(modality, scaledConfig);
+          resolveLoad!(model);
+          return;
+        }
+        if (scaledConfig !== config) {
+          const logger = getConfig().logger;
+          logger.debug('[lxrt] autoscale', {
+            modality,
+            from: config,
+            to: scaledConfig,
+          });
+        }
 
-    try {
-      await model.load(progressCallback);
+        // Create and load new model
+        const model = this.createModelInstance(modality, scaledConfig);
 
-      // Cache the model
-      const pipeline = model.getRawPipeline();
-      console.log(`[ModelManager] Caching model ${modality}:`, {
-        modelName: (scaledConfig as ModelConfig).model,
-        hasPipeline: !!pipeline,
-        pipelineType: typeof pipeline,
-      });
-      this.cache.set(modality, scaledConfig, pipeline);
+        // Create progress callback
+        const progressCallback = (progress: {
+          status: string;
+          file?: string;
+          progress?: number;
+          loaded?: number;
+          total?: number;
+        }) => {
+          // Map status to expected enum values
+          const mappedStatus = this.mapStatus(progress.status);
+          this.eventEmitter.emit('progress', {
+            modality,
+            model: (scaledConfig as ModelConfig).model!,
+            file: progress.file,
+            progress: progress.progress,
+            loaded: progress.loaded,
+            total: progress.total,
+            status: mappedStatus,
+          });
+        };
 
-      // Store in active models
-      this.models.set(modality, model);
-      this.configs.set(modality, scaledConfig);
+        await model.load(progressCallback);
 
-      // Emit ready event
-      this.eventEmitter.emit('ready', {
-        modality,
-        model: (scaledConfig as ModelConfig).model!,
-      });
+        // Cache the model
+        const pipeline = model.getRawPipeline();
+        console.log(`[ModelManager] Caching model ${modality}:`, {
+          modelName: (scaledConfig as ModelConfig).model,
+          hasPipeline: !!pipeline,
+          pipelineType: typeof pipeline,
+        });
+        this.cache.set(modality, scaledConfig, pipeline);
 
-      return model;
-    } catch (error) {
-      const err = error instanceof Error ? error : new Error(String(error));
+        // Store in active models
+        this.models.set(modality, model);
+        this.configs.set(modality, scaledConfig);
 
-      // Wrap in ModelLoadError
-      const loadError = new ModelLoadError(
-        `Failed to load model ${(scaledConfig as ModelConfig).model}: ${err.message}`,
-        (scaledConfig as ModelConfig).model as string,
-        modality,
-        err
-      );
+        // Emit ready event
+        this.eventEmitter.emit('ready', {
+          modality,
+          model: (scaledConfig as ModelConfig).model!,
+        });
 
-      this.eventEmitter.emit('error', {
-        modality,
-        error: loadError,
-      });
-      throw loadError;
-    }
+        resolveLoad!(model);
+      } catch (error) {
+        const err = error instanceof Error ? error : new Error(String(error));
+
+        // Wrap in ModelLoadError
+        const loadError = new ModelLoadError(
+          `Failed to load model ${config.model}: ${err.message}`,
+          config.model as string,
+          modality,
+          err
+        );
+
+        this.eventEmitter.emit('error', {
+          modality,
+          error: loadError,
+        });
+        rejectLoad!(loadError);
+      } finally {
+        // Clean up the loading promise
+        this.loadingPromises.delete(loadKey);
+      }
+    })();
+
+    return loadPromise;
   }
 
   /**

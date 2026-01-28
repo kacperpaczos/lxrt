@@ -581,6 +581,114 @@ const provider = createAIProvider({
 
 ---
 
+## Audyt Techniczny — Plan Działania (2026-01-28)
+
+### Metryki Wyjściowe
+- **Source LoC:** 13,388 | **Test LoC:** 4,176 | **Test Ratio:** 0.31 (target ≥0.5)
+- **Explicit `any` w production:** 6 lokalizacji
+- **TODOs w krytycznych ścieżkach:** 4
+- **Debug console.log w production:** 150
+- **Spin-lock polling patterns:** 7 lokalizacji
+
+---
+
+### 🔴 P0 — Krytyczne (ZAKOŃCZONE ✅)
+
+- [x] **Rozszerzyć `ILLMModel` o brakujące metody**
+  - **Plik:** `src/domain/models/index.ts` L22-32
+  - **Co:** Dodano `countTokens(text: string): number` i `getContextWindow(): number`
+  - **Status:** ✅ DONE — Usunięto `(model as any)` bypass w `AIProvider.ts`
+
+- [x] **Zastąpić spin-lock polling Promise chaining**
+  - **Pliki:** `LLMModel.ts`, `STTModel.ts`, `TTSModel.ts`, `OCRModel.ts`, `EmbeddingModel.ts`, `BaseModel.ts`
+  - **Co:** Zamieniono `while (this.loading) { await setTimeout(100) }` na `loadingPromise` pattern
+  - **Status:** ✅ DONE — Dodano również `loadingPromises` Map w `ModelManager` dla pełnej synchronizacji
+
+---
+
+### 🟡 P1 — Wysokie (ZAKOŃCZONE ✅)
+
+- [x] **Dodać `AbortSignal` support do inference**
+  - **Pliki:** `src/core/types.ts`, `src/models/LLMModel.ts`
+  - **Co:** Dodano `signal?: AbortSignal` do `ChatOptions` i `CompletionOptions`
+  - **Status:** ✅ DONE — Przekazuje `abort_signal` do Transformers.js pipeline
+
+- [ ] **Stworzyć GitHub Actions CI workflow**
+  - **Plik:** `.github/workflows/ci.yml` (nowy)
+  - **Co:** Build + lint + test:unit + npm audit na każdy PR
+  - **Effort:** 1 dzień
+
+- [ ] **Usunąć/zastąpić debug console.log Loggerem**
+  - **Zakres:** 150 statements w `src/` (głównie `src/models/`)
+  - **Co:** Usunąć lub przekierować do `Logger` interface
+  - **Effort:** 1 dzień
+
+---
+
+### 🟢 P2 — Średnie (CZĘŚCIOWO ZAKOŃCZONE)
+
+- [x] **Naprawić conditional import JSDOM**
+  - **Plik:** `src/app/vectorization/VectorizationService.ts`
+  - **Status:** ✅ DONE — Użyto dynamic `await import('jsdom')`
+
+- [x] **Dodać testy jednostkowe dla modeli**
+  - **Pliki:** `tests/node/unit/stt-model.test.ts`, `tts-model.test.ts`, `ocr-model.test.ts`
+  - **Status:** ✅ DONE
+
+- [x] **Dodać testy integracyjne dla concurrency**
+  - **Pliki:** `tests/node/integration/concurrent-load.test.ts`, `abort-signal.test.ts`
+  - **Status:** ✅ DONE
+
+- [ ] **Zaimplementować TODOs w VectorizationService**
+  - **Lokalizacje:** L725, L740
+  - **Effort:** 3-5 dni
+
+- [ ] **Dodać job cancellation do React/Vue hooks**
+  - **Pliki:** `src/ui/react/useVectorization.ts`, `src/ui/vue/useVectorization.ts`
+  - **Effort:** 4h
+
+---
+
+### 🔵 P3 — Niskie / Rekomendacje
+
+- [ ] **Weryfikacja cache modeli (Model Persistence Test)**
+  - **Cel:** Upewnić się, że LXRT pamięta załadowany model i nie pobiera go za każdym razem
+  - **Co:** Dodać integration test sprawdzający że 2x warmup() nie powoduje 2x download
+  - **Effort:** 2h
+
+- [ ] **Zaprojektować szynę logów (Logging Bus)**
+  - **Cel:** Centralny system logowania dostępny dla developerów i testów
+  - **Wymagania:**
+    - Interface `LogBus` z metodami `log()`, `warn()`, `error()`, `debug()`
+    - Możliwość subskrypcji logów w testach (`logBus.subscribe()`)
+    - Integracja z istniejącym `Logger` z `domain/logging/`
+  - **Effort:** 1-2 dni
+
+- [ ] **Wprowadzić enum ErrorPattern dla całej aplikacji**
+  - **Cel:** Type-safe error patterns zamiast string matching
+  - **Wymagania:**
+    ```typescript
+    export enum ErrorPattern {
+      MODEL_NOT_LOADED = 'MODEL_NOT_LOADED',
+      MODEL_LOAD_FAILED = 'MODEL_LOAD_FAILED',
+      INFERENCE_ABORTED = 'INFERENCE_ABORTED',
+      VALIDATION_FAILED = 'VALIDATION_FAILED',
+      // ...
+    }
+    ```
+  - **Gdzie użyć:** `src/domain/errors.ts`, wszystkie klasy błędów
+  - **Effort:** 0.5 dnia
+
+- [ ] **Dodać `implements IModel` do BaseModel**
+  - **Plik:** `src/models/BaseModel.ts` L8
+  - **Effort:** 30min
+
+- [ ] **Usunąć pozostałe `any` w StagehandAdapter**
+  - **Plik:** `src/adapters/StagehandAdapter.ts` L26, L57
+  - **Effort:** 1h
+
+---
+
 ## Załączniki
 
 ### A. Kod adaptera Stagehand

@@ -74,204 +74,208 @@ export class LLMModel extends BaseModel<LLMConfig> {
       return;
     }
 
-    if (this.loading) {
-      // Wait for existing load to complete
+    // Return existing loading promise to avoid concurrency issues
+    if (this.loadingPromise) {
       if (typeof console !== 'undefined' && console.log) {
-        console.log('[LLMModel] load(): waiting for concurrent load');
+        console.log('[LLMModel] load(): waiting for concurrent load (Promise)');
       }
-      while (this.loading) {
-        await new Promise(resolve => setTimeout(resolve, 100));
-      }
-      if (typeof console !== 'undefined' && console.log) {
-        console.log('[LLMModel] load(): concurrent load finished');
-      }
-      return;
+      return this.loadingPromise;
     }
 
     this.loading = true;
 
-    try {
-      const { pipeline, env } = await getTransformers();
-      if (typeof console !== 'undefined' && console.log) {
-        console.log('[LLMModel] load(): transformers loaded');
-      }
-
-      const isBrowser =
-        typeof window !== 'undefined' && typeof navigator !== 'undefined';
-      const supportsWebGPU =
-        isBrowser &&
-        typeof (navigator as unknown as { gpu?: unknown }).gpu !== 'undefined';
-
-      // Check actual WebGPU adapter availability (not just API presence)
-      let webgpuAdapterAvailable = false;
-      if (supportsWebGPU) {
-        try {
-          const navWithGpu = navigator as unknown as {
-            gpu?: { requestAdapter?: () => Promise<unknown> };
-          };
-          const adapter = await (navWithGpu.gpu?.requestAdapter?.() ||
-            Promise.resolve(null));
-          webgpuAdapterAvailable = !!adapter;
-        } catch {
-          webgpuAdapterAvailable = false;
+    // Wrap entire loading logic in a promise
+    this.loadingPromise = (async () => {
+      try {
+        const { pipeline, env } = await getTransformers();
+        if (typeof console !== 'undefined' && console.log) {
+          console.log('[LLMModel] load(): transformers loaded');
         }
-      }
 
-      // Use BackendSelector if available, otherwise fallback to old logic
-      const desiredDevice = this.config.device as string | undefined;
-      let tryOrder: string[];
+        const isBrowser =
+          typeof window !== 'undefined' && typeof navigator !== 'undefined';
+        const supportsWebGPU =
+          isBrowser &&
+          typeof (navigator as unknown as { gpu?: unknown }).gpu !==
+            'undefined';
 
-      if (this.backendSelector) {
-        // Use BackendSelector for device fallback logic
-        const fallbackDevice =
-          desiredDevice ||
-          (isBrowser ? (supportsWebGPU ? 'webgpu' : 'wasm') : 'cpu');
-        tryOrder = this.backendSelector.getDeviceFallbackOrder(
-          fallbackDevice as Device | 'wasm'
-        );
-      } else {
-        // Fallback to old logic if BackendSelector not available
-        const fallbackDevice =
-          desiredDevice ||
-          (isBrowser ? (supportsWebGPU ? 'webgpu' : 'wasm') : 'cpu');
-        tryOrder = (() => {
-          if (isBrowser) {
-            if (fallbackDevice === 'webgpu')
-              return webgpuAdapterAvailable ? ['webgpu', 'wasm'] : ['wasm'];
-            if (fallbackDevice === 'wasm') return ['wasm'];
-            return ['wasm'];
+        // Check actual WebGPU adapter availability (not just API presence)
+        let webgpuAdapterAvailable = false;
+        if (supportsWebGPU) {
+          try {
+            const navWithGpu = navigator as unknown as {
+              gpu?: { requestAdapter?: () => Promise<unknown> };
+            };
+            const adapter = await (navWithGpu.gpu?.requestAdapter?.() ||
+              Promise.resolve(null));
+            webgpuAdapterAvailable = !!adapter;
+          } catch {
+            webgpuAdapterAvailable = false;
           }
-          return fallbackDevice === 'webgpu'
-            ? ['webgpu', 'cpu']
-            : [fallbackDevice, ...(fallbackDevice !== 'cpu' ? ['cpu'] : [])];
-        })();
-      }
+        }
 
-      if (typeof console !== 'undefined' && console.log) {
-        console.log('[LLMModel] load(): env', {
-          isBrowser,
-          supportsWebGPU,
-          desiredDevice,
-          tryOrder,
-        });
-      }
+        // Use BackendSelector if available, otherwise fallback to old logic
+        const desiredDevice = this.config.device as string | undefined;
+        let tryOrder: string[];
 
-      const dtype = this.config.dtype || 'fp32';
-      if (typeof console !== 'undefined' && console.log) {
-        console.log('[LLMModel] load(): dtype resolved:', dtype);
-      }
+        if (this.backendSelector) {
+          // Use BackendSelector for device fallback logic
+          const fallbackDevice =
+            desiredDevice ||
+            (isBrowser ? (supportsWebGPU ? 'webgpu' : 'wasm') : 'cpu');
+          tryOrder = this.backendSelector.getDeviceFallbackOrder(
+            fallbackDevice as Device | 'wasm'
+          );
+        } else {
+          // Fallback to old logic if BackendSelector not available
+          const fallbackDevice =
+            desiredDevice ||
+            (isBrowser ? (supportsWebGPU ? 'webgpu' : 'wasm') : 'cpu');
+          tryOrder = (() => {
+            if (isBrowser) {
+              if (fallbackDevice === 'webgpu')
+                return webgpuAdapterAvailable ? ['webgpu', 'wasm'] : ['wasm'];
+              if (fallbackDevice === 'wasm') return ['wasm'];
+              return ['wasm'];
+            }
+            return fallbackDevice === 'webgpu'
+              ? ['webgpu', 'cpu']
+              : [fallbackDevice, ...(fallbackDevice !== 'cpu' ? ['cpu'] : [])];
+          })();
+        }
 
-      let lastError: Error | null = null;
-      for (const dev of tryOrder) {
-        try {
-          if (typeof console !== 'undefined' && console.log) {
-            console.log('[LLMModel] attempting device:', dev);
-          }
+        if (typeof console !== 'undefined' && console.log) {
+          console.log('[LLMModel] load(): env', {
+            isBrowser,
+            supportsWebGPU,
+            desiredDevice,
+            tryOrder,
+          });
+        }
 
-          // Configure ONNX backend using BackendSelector if available
-          if (this.backendSelector && env?.backends?.onnx) {
-            this.backendSelector.configureONNXBackend(dev, env);
-          } else if (env?.backends?.onnx) {
-            // Fallback to old ONNX configuration logic
-            interface ONNXBackends {
-              backendHint?: string;
-              wasm?: {
-                simd?: boolean;
-                numThreads?: number;
-              };
+        const dtype = this.config.dtype || 'fp32';
+        if (typeof console !== 'undefined' && console.log) {
+          console.log('[LLMModel] load(): dtype resolved:', dtype);
+        }
+
+        let lastError: Error | null = null;
+        for (const dev of tryOrder) {
+          try {
+            if (typeof console !== 'undefined' && console.log) {
+              console.log('[LLMModel] attempting device:', dev);
             }
 
-            const onnxBackends = env.backends.onnx as ONNXBackends;
-            if (dev === 'wasm') {
-              if ('backendHint' in onnxBackends)
-                onnxBackends.backendHint = 'wasm';
-              if (onnxBackends.wasm) {
-                onnxBackends.wasm.simd = true;
-                const cores =
-                  (typeof navigator !== 'undefined'
-                    ? navigator.hardwareConcurrency
-                    : 2) || 2;
-                onnxBackends.wasm.numThreads = Math.min(
-                  4,
-                  Math.max(1, cores - 1)
-                );
+            // Configure ONNX backend using BackendSelector if available
+            if (this.backendSelector && env?.backends?.onnx) {
+              this.backendSelector.configureONNXBackend(dev, env);
+            } else if (env?.backends?.onnx) {
+              // Fallback to old ONNX configuration logic
+              interface ONNXBackends {
+                backendHint?: string;
+                wasm?: {
+                  simd?: boolean;
+                  numThreads?: number;
+                };
+              }
+
+              const onnxBackends = env.backends.onnx as ONNXBackends;
+              if (dev === 'wasm') {
+                if ('backendHint' in onnxBackends)
+                  onnxBackends.backendHint = 'wasm';
+                if (onnxBackends.wasm) {
+                  onnxBackends.wasm.simd = true;
+                  const cores =
+                    (typeof navigator !== 'undefined'
+                      ? navigator.hardwareConcurrency
+                      : 2) || 2;
+                  onnxBackends.wasm.numThreads = Math.min(
+                    4,
+                    Math.max(1, cores - 1)
+                  );
+                  if (typeof console !== 'undefined' && console.log) {
+                    console.log('[LLMModel] WASM config:', {
+                      backendHint: onnxBackends.backendHint,
+                      simd: onnxBackends.wasm.simd,
+                      numThreads: onnxBackends.wasm.numThreads,
+                    });
+                  }
+                }
+              } else if (dev === 'webgpu') {
+                if ('backendHint' in onnxBackends)
+                  onnxBackends.backendHint = 'webgpu';
                 if (typeof console !== 'undefined' && console.log) {
-                  console.log('[LLMModel] WASM config:', {
+                  console.log('[LLMModel] WebGPU config:', {
                     backendHint: onnxBackends.backendHint,
-                    simd: onnxBackends.wasm.simd,
-                    numThreads: onnxBackends.wasm.numThreads,
+                    adapterAvailable: webgpuAdapterAvailable,
                   });
                 }
               }
-            } else if (dev === 'webgpu') {
-              if ('backendHint' in onnxBackends)
-                onnxBackends.backendHint = 'webgpu';
-              if (typeof console !== 'undefined' && console.log) {
-                console.log('[LLMModel] WebGPU config:', {
-                  backendHint: onnxBackends.backendHint,
-                  adapterAvailable: webgpuAdapterAvailable,
-                });
-              }
             }
-          }
 
-          const pipelineDevice = this.backendSelector
-            ? this.backendSelector.getPipelineDevice(dev)
-            : dev === 'wasm'
-              ? 'cpu'
-              : (dev as 'cpu' | 'gpu' | 'webgpu');
-          const logger = getConfig().logger;
-          logger.debug('[lxrt] load LLM try', {
-            device: dev,
-            dtype,
-          });
-          this.pipeline = await pipeline('text-generation', this.config.model, {
-            dtype,
-            device: pipelineDevice,
-            progress_callback: progressCallback,
-          });
+            const pipelineDevice = this.backendSelector
+              ? this.backendSelector.getPipelineDevice(dev)
+              : dev === 'wasm'
+                ? 'cpu'
+                : (dev as 'cpu' | 'gpu' | 'webgpu');
+            const logger = getConfig().logger;
+            logger.debug('[lxrt] load LLM try', {
+              device: dev,
+              dtype,
+            });
+            this.pipeline = await pipeline(
+              'text-generation',
+              this.config.model,
+              {
+                dtype,
+                device: pipelineDevice,
+                progress_callback: progressCallback,
+              }
+            );
 
-          this.loaded = true;
-          if (typeof console !== 'undefined' && console.log) {
-            console.log('[LLMModel] loaded successfully with device:', dev);
+            this.loaded = true;
+            if (typeof console !== 'undefined' && console.log) {
+              console.log('[LLMModel] loaded successfully with device:', dev);
+            }
+            lastError = null;
+            break;
+          } catch (err) {
+            const logger = getConfig().logger;
+            logger.debug('[lxrt] load LLM fallback', {
+              from: dev,
+              error: (err as Error)?.message,
+            });
+            lastError = err instanceof Error ? err : new Error(String(err));
           }
-          lastError = null;
-          break;
-        } catch (err) {
-          const logger = getConfig().logger;
-          logger.debug('[lxrt] load LLM fallback', {
-            from: dev,
-            error: (err as Error)?.message,
-          });
-          lastError = err instanceof Error ? err : new Error(String(err));
+        }
+
+        if (!this.loaded) {
+          throw (
+            lastError ||
+            new ModelLoadError(
+              'Unknown error during LLM model load',
+              this.config.model,
+              'llm'
+            )
+          );
+        }
+      } catch (error) {
+        this.loaded = false;
+        throw new ModelLoadError(
+          `Failed to load LLM model ${this.config.model}: ${(error as Error).message}`,
+          this.config.model,
+          'llm',
+          error as Error
+        );
+      } finally {
+        this.loading = false;
+        this.loadingPromise = null;
+        if (typeof console !== 'undefined' && console.log) {
+          console.log('[LLMModel] load(): finished, loaded=', this.loaded);
         }
       }
+    })();
 
-      if (!this.loaded) {
-        throw (
-          lastError ||
-          new ModelLoadError(
-            'Unknown error during LLM model load',
-            this.config.model,
-            'llm'
-          )
-        );
-      }
-    } catch (error) {
-      this.loaded = false;
-      throw new ModelLoadError(
-        `Failed to load LLM model ${this.config.model}: ${(error as Error).message}`,
-        this.config.model,
-        'llm',
-        error as Error
-      );
-    } finally {
-      this.loading = false;
-      if (typeof console !== 'undefined' && console.log) {
-        console.log('[LLMModel] load(): finished, loaded=', this.loaded);
-      }
-    }
-    return Promise.resolve();
+    return this.loadingPromise;
   }
 
   /**
@@ -329,6 +333,7 @@ export class LLMModel extends BaseModel<LLMConfig> {
       return_full_text: false,
       eos_token_id: eosId,
       pad_token_id: padId,
+      abort_signal: options.signal,
     } as Record<string, unknown>;
 
     try {
@@ -443,6 +448,7 @@ export class LLMModel extends BaseModel<LLMConfig> {
       return_full_text: false,
       eos_token_id: eosId,
       pad_token_id: padId,
+      abort_signal: options.signal,
     } as Record<string, unknown>;
 
     try {
@@ -535,6 +541,7 @@ export class LLMModel extends BaseModel<LLMConfig> {
       return_full_text: false,
       eos_token_id: eosId,
       pad_token_id: padId,
+      abort_signal: options.signal,
     } as Record<string, unknown>;
 
     // Start generation

@@ -134,6 +134,7 @@ export interface ChatOptions {
   repetitionPenalty?: number;
   stopSequences?: string[];
   systemPrompt?: string;
+  signal?: AbortSignal;
 }
 
 // Completion Options
@@ -142,6 +143,7 @@ export interface CompletionOptions {
   temperature?: number;
   topP?: number;
   stopSequences?: string[];
+  signal?: AbortSignal;
 }
 
 // TTS Options

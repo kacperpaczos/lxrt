@@ -11,6 +11,7 @@ export abstract class BaseModel<TConfig extends ModelConfig = ModelConfig> {
   protected modality: Modality;
   protected loaded = false;
   protected loading = false;
+  protected loadingPromise: Promise<void> | null = null;
 
   constructor(modality: Modality, config: TConfig) {
     this.modality = modality;

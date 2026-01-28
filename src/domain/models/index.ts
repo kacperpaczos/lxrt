@@ -29,6 +29,8 @@ export interface ILLMModel extends IModel {
     messages: Message[] | string,
     options?: ChatOptions
   ): AsyncGenerator<string>;
+  countTokens(text: string): number;
+  getContextWindow(): number;
 }
 
 export interface ITTSModel extends IModel {

@@ -57,186 +57,187 @@ export class TTSModel extends BaseModel<TTSConfig> {
       return;
     }
 
-    if (this.loading) {
+    if (this.loadingPromise) {
       if (typeof console !== 'undefined' && console.log) {
         console.log('[TTSModel] load(): waiting for concurrent load');
       }
-      while (this.loading) {
-        await new Promise(resolve => setTimeout(resolve, 100));
-      }
-      if (typeof console !== 'undefined' && console.log) {
-        console.log('[TTSModel] load(): concurrent load finished');
-      }
-      return;
+      return this.loadingPromise;
     }
 
     this.loading = true;
-
-    try {
-      const { pipeline, env } = await getTransformers();
-      if (typeof console !== 'undefined' && console.log) {
-        console.log('[TTSModel] load(): transformers loaded');
-      }
-
-      const isBrowser =
-        typeof window !== 'undefined' && typeof navigator !== 'undefined';
-      const supportsWebGPU =
-        isBrowser &&
-        typeof (navigator as unknown as { gpu?: unknown }).gpu !== 'undefined';
-      let webgpuAdapterAvailable = false;
-      if (supportsWebGPU) {
-        try {
-          const navWithGpu = navigator as unknown as {
-            gpu?: { requestAdapter?: () => Promise<unknown> };
-          };
-          const adapter = await (navWithGpu.gpu?.requestAdapter?.() ||
-            Promise.resolve(null));
-          webgpuAdapterAvailable = !!adapter;
-        } catch {
-          webgpuAdapterAvailable = false;
+    this.loadingPromise = (async () => {
+      try {
+        const { pipeline, env } = await getTransformers();
+        if (typeof console !== 'undefined' && console.log) {
+          console.log('[TTSModel] load(): transformers loaded');
         }
-      }
 
-      // Use BackendSelector if available, otherwise fallback to old logic
-      const desiredDevice = this.config.device as string | undefined;
-      let tryOrder: string[];
-
-      if (this.backendSelector) {
-        // Use BackendSelector for device fallback logic
-        const fallbackDevice =
-          desiredDevice ||
-          (isBrowser ? (webgpuAdapterAvailable ? 'webgpu' : 'wasm') : 'cpu');
-        tryOrder = this.backendSelector.getDeviceFallbackOrder(
-          fallbackDevice as Device | 'wasm'
-        );
-      } else {
-        // Fallback to old logic if BackendSelector not available
-        const fallbackDevice =
-          desiredDevice ||
-          (isBrowser ? (webgpuAdapterAvailable ? 'webgpu' : 'wasm') : 'cpu');
-        tryOrder = (() => {
-          if (isBrowser) {
-            if (fallbackDevice === 'webgpu')
-              return webgpuAdapterAvailable ? ['webgpu', 'wasm'] : ['wasm'];
-            if (fallbackDevice === 'wasm') return ['wasm'];
-            return ['wasm'];
-          }
-          return fallbackDevice === 'webgpu'
-            ? ['webgpu', 'cpu']
-            : [fallbackDevice, ...(fallbackDevice !== 'cpu' ? ['cpu'] : [])];
-        })();
-      }
-
-      if (typeof console !== 'undefined' && console.log) {
-        console.log('[TTSModel] load(): env', {
-          isBrowser,
-          supportsWebGPU,
-          webgpuAdapterAvailable,
-          desiredDevice,
-          tryOrder,
-        });
-      }
-
-      const dtype = this.config.dtype || 'fp32';
-      if (typeof console !== 'undefined' && console.log) {
-        console.log('[TTSModel] load(): dtype resolved:', dtype);
-      }
-
-      let lastError: Error | null = null;
-      for (const dev of tryOrder) {
-        try {
-          if (typeof console !== 'undefined' && console.log) {
-            console.log('[TTSModel] attempting device:', dev);
-          }
-
-          // Configure ONNX backend using BackendSelector if available
-          if (this.backendSelector && env?.backends?.onnx) {
-            this.backendSelector.configureONNXBackend(dev, env);
-          } else if (env?.backends?.onnx) {
-            // Fallback to old ONNX configuration logic
-            const onnxBackends = env.backends.onnx as {
-              backendHint?: string;
-              wasm?: { simd?: boolean; numThreads?: number };
+        const isBrowser =
+          typeof window !== 'undefined' && typeof navigator !== 'undefined';
+        const supportsWebGPU =
+          isBrowser &&
+          typeof (navigator as unknown as { gpu?: unknown }).gpu !==
+            'undefined';
+        let webgpuAdapterAvailable = false;
+        if (supportsWebGPU) {
+          try {
+            const navWithGpu = navigator as unknown as {
+              gpu?: { requestAdapter?: () => Promise<unknown> };
             };
-            if (dev === 'wasm') {
-              if ('backendHint' in onnxBackends)
-                onnxBackends.backendHint = 'wasm';
-              if (onnxBackends.wasm) {
-                onnxBackends.wasm.simd = true;
-                const cores =
-                  (typeof navigator !== 'undefined'
-                    ? navigator.hardwareConcurrency
-                    : 2) || 2;
-                onnxBackends.wasm.numThreads = Math.min(
-                  4,
-                  Math.max(1, cores - 1)
-                );
+            const adapter = await (navWithGpu.gpu?.requestAdapter?.() ||
+              Promise.resolve(null));
+            webgpuAdapterAvailable = !!adapter;
+          } catch {
+            webgpuAdapterAvailable = false;
+          }
+        }
+
+        // Use BackendSelector if available, otherwise fallback to old logic
+        const desiredDevice = this.config.device as string | undefined;
+        let tryOrder: string[];
+
+        if (this.backendSelector) {
+          // Use BackendSelector for device fallback logic
+          const fallbackDevice =
+            desiredDevice ||
+            (isBrowser ? (webgpuAdapterAvailable ? 'webgpu' : 'wasm') : 'cpu');
+          tryOrder = this.backendSelector.getDeviceFallbackOrder(
+            fallbackDevice as Device | 'wasm'
+          );
+        } else {
+          // Fallback to old logic if BackendSelector not available
+          const fallbackDevice =
+            desiredDevice ||
+            (isBrowser ? (webgpuAdapterAvailable ? 'webgpu' : 'wasm') : 'cpu');
+          tryOrder = (() => {
+            if (isBrowser) {
+              if (fallbackDevice === 'webgpu')
+                return webgpuAdapterAvailable ? ['webgpu', 'wasm'] : ['wasm'];
+              if (fallbackDevice === 'wasm') return ['wasm'];
+              return ['wasm'];
+            }
+            return fallbackDevice === 'webgpu'
+              ? ['webgpu', 'cpu']
+              : [fallbackDevice, ...(fallbackDevice !== 'cpu' ? ['cpu'] : [])];
+          })();
+        }
+
+        if (typeof console !== 'undefined' && console.log) {
+          console.log('[TTSModel] load(): env', {
+            isBrowser,
+            supportsWebGPU,
+            webgpuAdapterAvailable,
+            desiredDevice,
+            tryOrder,
+          });
+        }
+
+        const dtype = this.config.dtype || 'fp32';
+        if (typeof console !== 'undefined' && console.log) {
+          console.log('[TTSModel] load(): dtype resolved:', dtype);
+        }
+
+        let lastError: Error | null = null;
+        for (const dev of tryOrder) {
+          try {
+            if (typeof console !== 'undefined' && console.log) {
+              console.log('[TTSModel] attempting device:', dev);
+            }
+
+            // Configure ONNX backend using BackendSelector if available
+            if (this.backendSelector && env?.backends?.onnx) {
+              this.backendSelector.configureONNXBackend(dev, env);
+            } else if (env?.backends?.onnx) {
+              // Fallback to old ONNX configuration logic
+              const onnxBackends = env.backends.onnx as {
+                backendHint?: string;
+                wasm?: { simd?: boolean; numThreads?: number };
+              };
+              if (dev === 'wasm') {
+                if ('backendHint' in onnxBackends)
+                  onnxBackends.backendHint = 'wasm';
+                if (onnxBackends.wasm) {
+                  onnxBackends.wasm.simd = true;
+                  const cores =
+                    (typeof navigator !== 'undefined'
+                      ? navigator.hardwareConcurrency
+                      : 2) || 2;
+                  onnxBackends.wasm.numThreads = Math.min(
+                    4,
+                    Math.max(1, cores - 1)
+                  );
+                  if (typeof console !== 'undefined' && console.log) {
+                    console.log('[TTSModel] WASM config:', {
+                      backendHint: onnxBackends.backendHint,
+                      simd: onnxBackends.wasm.simd,
+                      numThreads: onnxBackends.wasm.numThreads,
+                    });
+                  }
+                }
+              } else if (dev === 'webgpu') {
+                if ('backendHint' in onnxBackends)
+                  onnxBackends.backendHint = 'webgpu';
                 if (typeof console !== 'undefined' && console.log) {
-                  console.log('[TTSModel] WASM config:', {
+                  console.log('[TTSModel] WebGPU config:', {
                     backendHint: onnxBackends.backendHint,
-                    simd: onnxBackends.wasm.simd,
-                    numThreads: onnxBackends.wasm.numThreads,
+                    adapterAvailable: webgpuAdapterAvailable,
                   });
                 }
               }
-            } else if (dev === 'webgpu') {
-              if ('backendHint' in onnxBackends)
-                onnxBackends.backendHint = 'webgpu';
-              if (typeof console !== 'undefined' && console.log) {
-                console.log('[TTSModel] WebGPU config:', {
-                  backendHint: onnxBackends.backendHint,
-                  adapterAvailable: webgpuAdapterAvailable,
-                });
+            }
+
+            const pipelineDevice = this.backendSelector
+              ? this.backendSelector.getPipelineDevice(dev)
+              : (dev as unknown as 'webgpu' | 'wasm' | 'gpu' | 'cpu');
+
+            this.pipeline = await pipeline(
+              'text-to-speech',
+              this.config.model,
+              {
+                dtype,
+                device: pipelineDevice,
+                progress_callback: progressCallback,
               }
+            );
+
+            this.loaded = true;
+            if (typeof console !== 'undefined' && console.log) {
+              console.log('[TTSModel] loaded successfully with device:', dev);
+            }
+            lastError = null;
+            break;
+          } catch (e) {
+            lastError = e instanceof Error ? e : new Error(String(e));
+            if (typeof console !== 'undefined' && console.log) {
+              console.log(
+                '[TTSModel] device failed:',
+                dev,
+                '| error:',
+                (lastError as Error).message
+              );
             }
           }
-
-          const pipelineDevice = this.backendSelector
-            ? this.backendSelector.getPipelineDevice(dev)
-            : (dev as unknown as 'webgpu' | 'wasm' | 'gpu' | 'cpu');
-
-          this.pipeline = await pipeline('text-to-speech', this.config.model, {
-            dtype,
-            device: pipelineDevice,
-            progress_callback: progressCallback,
-          });
-
-          this.loaded = true;
-          if (typeof console !== 'undefined' && console.log) {
-            console.log('[TTSModel] loaded successfully with device:', dev);
-          }
-          lastError = null;
-          break;
-        } catch (e) {
-          lastError = e instanceof Error ? e : new Error(String(e));
-          if (typeof console !== 'undefined' && console.log) {
-            console.log(
-              '[TTSModel] device failed:',
-              dev,
-              '| error:',
-              (lastError as Error).message
-            );
-          }
         }
-      }
 
-      if (!this.loaded) {
-        throw lastError || new Error('Unknown error during TTS model load');
-      }
+        if (!this.loaded) {
+          throw lastError || new Error('Unknown error during TTS model load');
+        }
 
-      this.loaded = true;
-    } catch (error) {
-      this.loaded = false;
-      throw new ModelLoadError(
-        `Failed to load TTS model ${this.config.model}: ${(error as Error).message}`,
-        this.config.model,
-        'tts',
-        error as Error
-      );
-    } finally {
-      this.loading = false;
-    }
-    return Promise.resolve();
+        this.loaded = true;
+      } catch (error) {
+        this.loaded = false;
+        throw new ModelLoadError(
+          `Failed to load TTS model ${this.config.model}: ${(error as Error).message}`,
+          this.config.model,
+          'tts',
+          error as Error
+        );
+      } finally {
+        this.loading = false;
+        this.loadingPromise = null;
+      }
+    })();
+    return this.loadingPromise;
   }
 
   /**

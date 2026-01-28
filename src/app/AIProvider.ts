@@ -19,6 +19,7 @@ import type {
   ModelStatus,
 } from '../core/types';
 import { ValidationError, ModelNotLoadedError } from '@domain/errors';
+import type { ILLMModel } from '@domain/models';
 import { ERRORS } from '../core/error-messages';
 import { ModelManager } from './ModelManager';
 import { EventEmitter } from '@infra/events/EventEmitter';
@@ -322,8 +323,7 @@ export class AIProvider {
       }
       throw new ValidationError(ERRORS.MODEL.NOT_CONFIGURED('llm'), 'llm');
     }
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    return (model as any).countTokens(text);
+    return (model as unknown as ILLMModel).countTokens(text);
   }
 
   /**
@@ -342,8 +342,7 @@ export class AIProvider {
       }
       throw new ValidationError(ERRORS.MODEL.NOT_CONFIGURED('llm'), 'llm');
     }
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    return (model as any).getContextWindow();
+    return (model as unknown as ILLMModel).getContextWindow();
   }
 
   // ==================== Event Methods ====================

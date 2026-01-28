@@ -26,7 +26,7 @@ import type { ResourceUsageEstimator } from '../../infra/resource/ResourceUsageE
 import type { EmbeddingAdapter } from './adapters/EmbeddingAdapter';
 import { ProgressTracker } from '../../utils/ProgressTracker';
 import { EmbeddingModel } from '../../models/EmbeddingModel';
-import { JSDOM } from 'jsdom';
+
 import { Readability } from '@mozilla/readability';
 
 export interface VectorizationResult {
@@ -707,6 +707,7 @@ export class VectorizationService {
         );
       }
       const html = await response.text();
+      const { JSDOM } = await import('jsdom');
       const dom = new JSDOM(html, { url });
       const reader = new Readability(
         dom.window.document as unknown as Document

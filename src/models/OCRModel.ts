@@ -46,54 +46,56 @@ export class OCRModel extends BaseModel<OCRConfig> {
       return;
     }
 
-    if (this.loading) {
+    if (this.loadingPromise) {
       if (typeof console !== 'undefined' && console.log) {
         console.log('[OCRModel] load(): waiting for concurrent load');
       }
-      while (this.loading) {
-        await new Promise(resolve => setTimeout(resolve, 100));
-      }
-      if (typeof console !== 'undefined' && console.log) {
-        console.log('[OCRModel] load(): concurrent load finished');
-      }
-      return;
+      return this.loadingPromise;
     }
 
     this.loading = true;
 
-    try {
-      // Try to use Transformers.js OCR pipeline instead of Tesseract.js
-      // This provides better Node.js compatibility
-      const { pipeline } = await getTransformers();
+    this.loadingPromise = (async () => {
+      try {
+        // Try to use Transformers.js OCR pipeline instead of Tesseract.js
+        // This provides better Node.js compatibility
+        const { pipeline } = await getTransformers();
 
-      this.pipeline = await pipeline('image-to-text', this.config.model, {
-        device: this.config.device || 'cpu',
-        dtype: this.config.dtype || 'fp32',
-      });
+        this.pipeline = await pipeline('image-to-text', this.config.model, {
+          device: this.config.device || 'cpu',
+          dtype: this.config.dtype || 'fp32',
+        });
 
-      if (typeof console !== 'undefined' && console.log) {
-        console.log('[OCRModel] load(): Transformers.js OCR pipeline loaded');
+        if (typeof console !== 'undefined' && console.log) {
+          console.log('[OCRModel] load(): Transformers.js OCR pipeline loaded');
+        }
+
+        this.loaded = true;
+        this.loading = false;
+
+        if (typeof console !== 'undefined' && console.log) {
+          console.log('[OCRModel] load(): completed');
+        }
+      } catch (error) {
+        this.loading = false;
+        const modelError = new ModelLoadError(
+          `Failed to load OCR model: ${error instanceof Error ? error.message : String(error)}`,
+          this.config.model || 'tesseract',
+          'ocr'
+        );
+        if (typeof console !== 'undefined' && console.error) {
+          console.error('[OCRModel] load(): error', modelError);
+        }
+        throw modelError;
+      } finally {
+        this.loading = false;
+        this.loadingPromise = null;
+        if (typeof console !== 'undefined' && console.log) {
+          console.log('[OCRModel] load(): finished');
+        }
       }
-
-      this.loaded = true;
-      this.loading = false;
-
-      if (typeof console !== 'undefined' && console.log) {
-        console.log('[OCRModel] load(): completed');
-      }
-    } catch (error) {
-      this.loading = false;
-      const modelError = new ModelLoadError(
-        `Failed to load OCR model: ${error instanceof Error ? error.message : String(error)}`,
-        this.config.model || 'tesseract',
-        'ocr'
-      );
-      if (typeof console !== 'undefined' && console.error) {
-        console.error('[OCRModel] load(): error', modelError);
-      }
-      throw modelError;
-    }
-    return Promise.resolve();
+    })();
+    return this.loadingPromise;
   }
 
   /**
