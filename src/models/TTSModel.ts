@@ -298,6 +298,7 @@ export class TTSModel extends BaseModel<TTSConfig> {
       const inferOptions = {
         speaker_embeddings: speakerEmbeddings,
         ...voiceParams,
+        abort_signal: options.signal,
       } as Record<string, unknown>;
 
       this.logger.debug('[TTSModel] synthesize(): speaker embeddings', {

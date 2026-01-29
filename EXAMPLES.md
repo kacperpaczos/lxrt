@@ -140,6 +140,59 @@ const poem = await provider.complete(
 
 ---
 
+## Zaawansowane LLM
+
+### JSON Mode
+
+Wymuś na modelu zwrócenie poprawnego obiektu JSON.
+
+```typescript
+const response = await provider.chat('Wymień 3 stolice europejskie jako klucze i ich kraje jako wartości.', {
+  responseFormat: { type: 'json_object' }
+});
+
+console.log(response.content);
+// { "Paryż": "Francja", "Berlin": "Niemcy", "Warszawa": "Polska" }
+```
+
+### Function Calling (Narzędzia)
+
+Pozwól modelowi decydować o wywołaniu zewnętrznych funkcji.
+
+```typescript
+const tools = [
+  {
+    type: 'function',
+    function: {
+      name: 'get_current_weather',
+      description: 'Pobierz aktualną pogodę',
+      parameters: {
+        type: 'object',
+        properties: {
+          location: { type: 'string', description: 'Miasto, np. Kraków, PL' },
+          unit: { type: 'string', enum: ['celsius', 'fahrenheit'] },
+        },
+        required: ['location'],
+      },
+    },
+  },
+];
+
+const response = await provider.chat('Jaka jest pogoda w Krakowie?', { tools });
+
+if (response.toolCalls) {
+  for (const call of response.toolCalls) {
+    if (call.function.name === 'get_current_weather') {
+      const args = JSON.parse(call.function.arguments);
+      console.log(`Wywołaj get_current_weather(${args.location})`);
+      // Tutaj wywołaj realne API i zwróć wynik do modelu w kolejnej turze
+    }
+  }
+}
+```
+
+---
+
 ## Synteza Mowy (TTS)
 
 ### Podstawowa synteza

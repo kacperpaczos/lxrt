@@ -148,6 +148,29 @@ export interface ChatOptions {
   stopSequences?: string[];
   systemPrompt?: string;
   signal?: AbortSignal;
+  tools?: Tool[];
+  toolChoice?: ToolChoice;
+  responseFormat?: ResponseFormat;
+}
+
+export type ResponseFormat =
+  | { type: 'text' }
+  | { type: 'json_object'; schema?: Record<string, unknown> };
+
+export type ToolChoice =
+  | 'auto'
+  | 'none'
+  | { type: 'function'; function: { name: string } };
+
+export interface Tool {
+  type: 'function';
+  function: FunctionDef;
+}
+
+export interface FunctionDef {
+  name: string;
+  description?: string;
+  parameters: Record<string, unknown>; // JSON Schema object
 }
 
 // Completion Options
@@ -171,6 +194,7 @@ export interface TTSOptions {
   age?: import('./VoiceProfile').VoiceAge;
   accent?: string;
   style?: import('./VoiceProfile').VoiceStyle;
+  signal?: AbortSignal;
 }
 
 // STT Options
@@ -178,12 +202,14 @@ export interface STTOptions {
   language?: string;
   task?: 'transcribe' | 'translate';
   timestamps?: boolean;
+  signal?: AbortSignal;
 }
 
 // Embedding Options
 export interface EmbeddingOptions {
   pooling?: 'mean' | 'cls';
   normalize?: boolean;
+  signal?: AbortSignal;
 }
 
 // OCR Options
@@ -233,7 +259,17 @@ export interface ChatResponse {
   content: string;
   role: 'assistant';
   usage?: TokenUsage;
-  finishReason?: 'stop' | 'length' | 'error';
+  finishReason?: 'stop' | 'length' | 'error' | 'tool_calls';
+  toolCalls?: ToolCall[];
+}
+
+export interface ToolCall {
+  id: string;
+  type: 'function';
+  function: {
+    name: string;
+    arguments: string; // JSON string
+  };
 }
 
 // Token Usage

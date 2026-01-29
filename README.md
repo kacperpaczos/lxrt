@@ -101,6 +101,23 @@ const response = await provider.chat([
 for await (const token of provider.stream('Opowiedz historię')) {
   process.stdout.write(token);
 }
+
+// JSON Mode
+const jsonRel = await provider.chat('Wymień 3 miasta w JSON', {
+  responseFormat: { type: 'json_object' }
+});
+
+// Function Calling
+const tools = [{
+  type: 'function',
+  function: {
+    name: 'get_weather',
+    parameters: { type: 'object', properties: { location: { type: 'string' } } }
+  }
+}];
+const toolRes = await provider.chat('Jaka pogoda w Warszawie?', { tools });
+console.log(toolRes.toolCalls); // [{ name: 'get_weather', arguments: '{"location":"Warszawa"}' }]
+
 ```
 
 ### 🔊 TTS (Text-to-Speech)

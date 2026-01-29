@@ -12,9 +12,9 @@
 #### Abort/Cancel dla Inference
 **Problem:** Nie można przerwać trwającego inference w pełni (częściowo zaimplementowane w LLMModel).
 
-**Status:** Częściowo done — `AbortSignal` w `ChatOptions`, brakuje pełnej propagacji do pipeline.
+**Status:** Done — `AbortSignal` w `ChatOptions` oraz pełna propagacja do `Binding` i pipeline we wszystkich modelach (LLM, Embed, STT, TTS).
 
-**Nakład:** 3-5 dni
+**Nakład:** Zrobione (v0.7.0 feature)
 
 ---
 
@@ -31,7 +31,7 @@ const response = await provider.chat(messages, {
 });
 ```
 
-**Nakład:** 1 tydzień
+**Nakład:** Zrobione (v0.7.0 feature)
 
 ---
 
@@ -51,7 +51,7 @@ const response = await provider.chat(messages, {
 });
 ```
 
-**Nakład:** 2 tygodnie
+**Nakład:** Zrobione (v0.7.0 feature)
 
 ---
 
@@ -64,6 +64,9 @@ const response = await provider.chat(messages, {
 - [x] **Interface Consistency** — `ILLMModel` z `countTokens` i `getContextWindow`
 - [x] **Spin-Lock Removal** — Promise-based `loadingPromise` we wszystkich modelach
 - [x] **ModelManager Concurrency** — Race condition fix z deferred promise
+- [x] **Abort/Cancel dla Inference** — Pełne wsparcie `AbortSignal`
+- [x] **JSON Mode** — `responseFormat: { type: 'json_object' }` (Prompt Injection)
+- [x] **Function Calling** — `tools` API Support (Prompt Injection & Parsing)
 
 ### Wysokie (P1)
 - [x] **AbortSignal Support** — `signal?: AbortSignal` w `ChatOptions`
