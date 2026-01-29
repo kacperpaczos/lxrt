@@ -108,13 +108,7 @@ export class ModelCache extends EventEmitter {
     if (!modelName) {
       return undefined;
     }
-    if (typeof console !== 'undefined' && console.log) {
-      console.log(`[ModelCache] get(${type}, ${JSON.stringify(config)})`);
-    }
     const result = this.getByName(type, modelName);
-    if (typeof console !== 'undefined' && console.log) {
-      console.log(`[ModelCache] get result:`, !!result);
-    }
     return result;
   }
 
@@ -123,18 +117,10 @@ export class ModelCache extends EventEmitter {
    */
   private getByName(type: string, modelName: string): unknown | undefined {
     const key = this.getKey(type, modelName);
-    if (typeof console !== 'undefined' && console.log) {
-      console.log(
-        `[ModelCache] getByName key: ${key}, cache size: ${this.cache.size}`
-      );
-    }
     const entry = this.cache.get(key);
 
     if (!entry) {
       this.stats.misses++;
-      if (typeof console !== 'undefined' && console.log) {
-        console.log(`[ModelCache] getByName miss: ${key}`);
-      }
       return undefined;
     }
 
@@ -176,18 +162,10 @@ export class ModelCache extends EventEmitter {
    */
   hasByName(type: string, modelName: string): boolean {
     const key = this.getKey(type, modelName);
-    if (typeof console !== 'undefined' && console.log) {
-      console.log(
-        `[ModelCache] hasByName key: ${key}, cache size: ${this.cache.size}`
-      );
-    }
     const entry = this.cache.get(key);
 
     if (!entry) {
       this.stats.misses++;
-      if (typeof console !== 'undefined' && console.log) {
-        console.log(`[ModelCache] hasByName miss: ${key}`);
-      }
       return false;
     }
 
@@ -195,18 +173,12 @@ export class ModelCache extends EventEmitter {
     if (entry.expiresAt && entry.expiresAt < new Date()) {
       this.cache.delete(key);
       this.stats.misses++;
-      if (typeof console !== 'undefined' && console.log) {
-        console.log(`[ModelCache] hasByName expired: ${key}`);
-      }
       return false;
     }
 
     this.stats.hits++;
     entry.lastAccessed = new Date();
     entry.accessCount++;
-    if (typeof console !== 'undefined' && console.log) {
-      console.log(`[ModelCache] hasByName hit: ${key}`);
-    }
     return true;
   }
 
@@ -227,11 +199,6 @@ export class ModelCache extends EventEmitter {
     const modelName = config.model;
     if (!modelName) {
       return;
-    }
-    if (typeof console !== 'undefined' && console.log) {
-      console.log(
-        `[ModelCache] set(${type}, ${JSON.stringify(config)}, pipeline: ${!!pipeline})`
-      );
     }
     this.setByName(type, modelName, pipeline, size);
   }
@@ -259,17 +226,7 @@ export class ModelCache extends EventEmitter {
         : undefined,
     };
 
-    if (typeof console !== 'undefined' && console.log) {
-      console.log(
-        `[ModelCache] setByName key: ${key}, before cache size: ${this.cache.size}`
-      );
-    }
     this.cache.set(key, entry);
-    if (typeof console !== 'undefined' && console.log) {
-      console.log(
-        `[ModelCache] setByName after cache size: ${this.cache.size}`
-      );
-    }
     this.emit('modelCached', { type, modelName, size });
 
     // Check if we need to evict old models

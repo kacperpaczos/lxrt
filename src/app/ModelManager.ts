@@ -59,7 +59,9 @@ export class ModelManager {
     // Check if a load is already in progress for this modality+model
     const existingLoadPromise = this.loadingPromises.get(loadKey);
     if (existingLoadPromise) {
-      console.log(`[ModelManager] Awaiting existing load for ${loadKey}`);
+      getConfig().logger.debug(
+        `[ModelManager] Awaiting existing load for ${loadKey}`
+      );
       return existingLoadPromise;
     }
 
@@ -97,7 +99,9 @@ export class ModelManager {
 
     // Store immediately so concurrent calls can await this promise
     this.loadingPromises.set(loadKey, loadPromise);
-    console.log(`[ModelManager] Stored loadingPromise for ${loadKey}`);
+    getConfig().logger.debug(
+      `[ModelManager] Stored loadingPromise for ${loadKey}`
+    );
 
     // Execute all async work inside the deferred promise
     (async () => {
@@ -120,7 +124,7 @@ export class ModelManager {
         );
 
         // Check cache using scaled config (consistent with what we store)
-        console.log(
+        getConfig().logger.debug(
           `[ModelManager] Checking cache for ${modality}:`,
           scaledConfig
         );
@@ -171,7 +175,7 @@ export class ModelManager {
 
         // Cache the model
         const pipeline = model.getRawPipeline();
-        console.log(`[ModelManager] Caching model ${modality}:`, {
+        getConfig().logger.debug(`[ModelManager] Caching model ${modality}:`, {
           modelName: (scaledConfig as ModelConfig).model,
           hasPipeline: !!pipeline,
           pipelineType: typeof pipeline,
