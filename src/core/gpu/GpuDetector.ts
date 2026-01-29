@@ -61,7 +61,7 @@ export class GpuDetector {
             if (typeof (adapter as any).requestAdapterInfo === 'function') {
               try {
                 caps.adapterInfo = await (adapter as any).requestAdapterInfo();
-              } catch (e) {
+              } catch {
                 /* ignore */
               }
             } else if ((adapter as any).info) {
