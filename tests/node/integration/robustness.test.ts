@@ -25,6 +25,10 @@ describe('Robustness (Mocked Failures)', () => {
 
 
 
+        beforeAll(async () => {
+            await init();
+        });
+
         it('should wrap internal errors in ModelLoadError', async () => {
             const provider = createAIProvider({
                 llm: { model: 'Xenova/gpt2' }
@@ -48,7 +52,8 @@ describe('Robustness (Mocked Failures)', () => {
     describe('Input Validation Boundaries', () => {
         let provider: ReturnType<typeof createAIProvider>;
 
-        beforeAll(() => {
+        beforeAll(async () => {
+            await init();
             provider = createAIProvider({
                 llm: { model: 'Xenova/gpt2' },
                 stt: { model: 'Xenova/whisper-tiny' }
