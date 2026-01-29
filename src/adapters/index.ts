@@ -1,12 +1,4 @@
-/**
- * AI Framework Adapters for Transformers Router
- */
-
-export { OpenAIAdapter } from './OpenAIAdapter';
-
-export {
-  LangChainLLM,
-  LangChainEmbeddings,
-  createLangChainLLM,
-  createLangChainEmbeddings,
-} from './LangChainAdapter';
+export * from './OpenAIAdapter';
+export * from './LangChainAdapter';
+export * from './StagehandAdapter';
+export * from './VercelAdapter';
