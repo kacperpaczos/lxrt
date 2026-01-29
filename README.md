@@ -34,6 +34,21 @@ npm install lxrt @huggingface/transformers
 # lub yarn / pnpm
 ```
 
+## CLI (Zarządzanie Modelami)
+
+LXRT udostępnia narzędzie wiersza poleceń do zarządzania lokalnymi modelami:
+
+```bash
+# Pobranie modelu z Hugging Face Hub (z paskiem postępu)
+npx lxrt pull Xenova/Qwen1.5-0.5B-Chat --dtype q4
+
+# Lista pobranych modeli
+npx lxrt list
+
+# Usunięcie modelu
+npx lxrt remove Xenova/Qwen1.5-0.5B-Chat
+```
+
 ---
 
 ## Szybki Start
@@ -129,9 +144,17 @@ const result = await provider.findSimilar('Kot na macie', dokumenty);
 
 ### 📊 Wektoryzacja (RAG)
 
+Wsparcie dla plików tekstowych, **PDF** oraz **DOCX**:
+
 ```typescript
 await provider.initializeVectorization({ storage: 'indexeddb' });
-await provider.indexFiles([file1, file2]);
+
+// Automatyczna ekstrakcja tekstu z PDF/DOCX
+await provider.indexFiles([
+    new File([pdfBlob], "dokument.pdf", { type: "application/pdf" }),
+    new File([docxBlob], "pismo.docx", { type: "application/vnd.openxmlformats-officedocument.wordprocessingml.document" })
+]);
+
 const results = await provider.queryVectors('Jak działa AI?');
 ```
 
@@ -239,10 +262,36 @@ const resp = await client.chat.completions.create({
 });
 ```
 
-### LangChain
+### ✅ Vercel AI SDK
+
+Adapter umożliwia użycie LXRT jako dostawcy w Vercel AI SDK (streaming response):
 
 ```typescript
-import { createLangChainLLM } from 'lxrt';
+import { createVercelProvider } from 'lxrt/adapters';
+import { streamText } from 'ai';
+
+const provider = createVercelProvider(lxrtProvider);
+const result = await streamText({
+  model: provider.languageModel('local-model'),
+  prompt: 'Dlaczego niebo jest niebieskie?',
+});
+```
+
+### 🎭 Stagehand (Browser Automation)
+
+Użyj LXRT do sterowania przeglądarką w Stagehand:
+
+```typescript
+import { StagehandAdapter } from 'lxrt/adapters';
+
+const model = new StagehandAdapter(provider, 'Xenova/Qwen1.5-0.5B-Chat');
+// Użyj 'model' w konfiguracji Stagehand
+```
+
+### 🦜🔗 LangChain
+
+```typescript
+import { createLangChainLLM } from 'lxrt/adapters';
 
 const llm = createLangChainLLM(provider);
 const res = await llm.invoke('Opowiedz żart o kotach');

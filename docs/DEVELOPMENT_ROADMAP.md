@@ -7,16 +7,6 @@
 
 ## 📋 DO ZROBIENIA (TODO)
 
-### 🔴 Krytyczne
-
-#### WebGPU Backend
-**Status:** ✅ Zakończone (see [WEBGPU_GUIDE.md](./docs/WEBGPU_GUIDE.md))
-- Implemented `OnnxConfigurator` & `GpuDetector`
-- Added `webgpu` device support to all models
-- Performance speedup 10-50x achieved
-
----
-
 ### 🟡 Wysokie
 
 #### Abort/Cancel dla Inference
@@ -65,62 +55,24 @@ const response = await provider.chat(messages, {
 
 ---
 
-### 🟢 Średnie
-
-#### Adaptery Integracji
-Stworzyć oficjalne adaptery:
-- `@lxrt/stagehand` — adapter dla Stagehand
-- `@lxrt/langchain` — adapter dla LangChain.js
-- `@lxrt/vercel-ai` — adapter dla Vercel AI SDK
-
-**Nakład:** 1 tydzień per adapter
-
----
-
-#### CLI Zarządzania Modelami
-```bash
-npx lxrt pull Xenova/Qwen1.5-0.5B-Chat --dtype q4
-npx lxrt list
-npx lxrt remove Xenova/Phi-3-mini-4k-instruct
-```
-
-**Nakład:** 1 tydzień
-
----
-
-#### Logger Cleanup
-**Problem:** ~150 `console.log` statements w `src/` (głównie `src/models/`).
-
-**Co:** Usunąć lub przekierować do `LogBus` interface.
-
-**Nakład:** 1 dzień
-
----
-
-#### VectorizationService TODOs
-**Lokalizacje:** L725, L740
-- PDF extraction (`pdf-parse`)
-- DOCX support (`mammoth`)
-- LangChain TextSplitter
-
-**Nakład:** 3-5 dni
-
----
-
 ## ✅ ZAKOŃCZONE (DONE)
 
 ### Krytyczne (P0)
+- [x] **WebGPU Backend** — Full WebGPU acceleration support (10-50x speedup)
 - [x] **countTokens()** — `provider.countTokens(text)`
 - [x] **getContextWindow()** — `provider.getContextWindow()`
 - [x] **Interface Consistency** — `ILLMModel` z `countTokens` i `getContextWindow`
 - [x] **Spin-Lock Removal** — Promise-based `loadingPromise` we wszystkich modelach
 - [x] **ModelManager Concurrency** — Race condition fix z deferred promise
-- [x] **WebGPU Backend** — Full WebGPU acceleration support (LLM, Embeddings, etc.)
 
 ### Wysokie (P1)
 - [x] **AbortSignal Support** — `signal?: AbortSignal` w `ChatOptions`
 
 ### Średnie (P2)
+- [x] **Adaptery Integracji** — LangChain (`@lxrt/langchain`), Vercel AI SDK (`@lxrt/vercel-ai`), Stagehand (`@lxrt/stagehand`)
+- [x] **CLI Zarządzania Modelami** — `lxrt pull`/`list`/`remove`
+- [x] **VectorizationService Enhancements** — PDF (`pdf-parse`), DOCX (`mammoth`), Smart TextSplitter
+- [x] **Logger Cleanup** — LogBus integration
 - [x] **Fix Path Aliases** — `tsc-alias` w build pipeline
 - [x] **Fix ONNX Conflict** — Usunięto bezpośrednią zależność
 - [x] **Typy Eventów** — `ProgressEvent`, `ReadyEvent` wyeksportowane
@@ -158,18 +110,8 @@ npx lxrt remove Xenova/Phi-3-mini-4k-instruct
 
 | Kategoria | Do zrobienia | Zakończone |
 |-----------|--------------|------------|
-| 🔴 Krytyczne | 1 | 5 |
+| 🔴 Krytyczne | 0 | 6 |
 | 🟡 Wysokie | 3 | 1 |
-| 🟢 Średnie | 4 | 14 |
+| 🟢 Średnie | 0 | 18 |
 | 🔵 Niskie | 0 | 8 |
-| **Razem** | **8** | **28** |
-
----
-
-## Załączniki
-
-### A. Kod adaptera Stagehand
-Lokalizacja: `/home/pyroxar/Pulpit/lxrt/examples/stagehand/src/LxrtLLMProvider.ts`
-
-### B. Zoptymalizowany przykład
-Lokalizacja: `/home/pyroxar/Pulpit/lxrt/examples/stagehand/src/index.ts`
+| **Razem** | **3** | **33** |
