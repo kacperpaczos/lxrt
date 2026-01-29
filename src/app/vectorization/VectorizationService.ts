@@ -720,12 +720,54 @@ export class VectorizationService {
   }
 
   private async extractFromFile(
-    _file: File,
-    _modality: VectorModality
+    file: File,
+    modality: VectorModality
   ): Promise<string | ArrayBuffer> {
-    // TODO: Implement file extraction based on modality
-    // For now, just return the file content as ArrayBuffer
-    return await _file.arrayBuffer();
+    const ext = file.name.split('.').pop()?.toLowerCase();
+
+    // PDF extraction
+    if (ext === 'pdf') {
+      try {
+        // Dynamic import with type assertion for compatibility
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const pdfParseModule = (await import('pdf-parse')) as any;
+        const pdfParse =
+          typeof pdfParseModule === 'function'
+            ? pdfParseModule
+            : pdfParseModule.default || pdfParseModule;
+        const buffer = Buffer.from(await file.arrayBuffer());
+        const data = await pdfParse(buffer);
+        return data.text as string;
+      } catch (error) {
+        throw new Error(`Failed to extract PDF content: ${error}`);
+      }
+    }
+
+    // DOCX extraction
+    if (ext === 'docx') {
+      try {
+        const mammoth = await import('mammoth');
+        const buffer = await file.arrayBuffer();
+        const result = await mammoth.extractRawText({ arrayBuffer: buffer });
+        return result.value;
+      } catch (error) {
+        throw new Error(`Failed to extract DOCX content: ${error}`);
+      }
+    }
+
+    // Plain text files
+    if (
+      ext === 'txt' ||
+      ext === 'md' ||
+      ext === 'json' ||
+      ext === 'csv' ||
+      modality === 'text'
+    ) {
+      return await file.text();
+    }
+
+    // Binary files (images, audio, video) - return as ArrayBuffer
+    return await file.arrayBuffer();
   }
 
   private sanitizeText(text: string): string {
@@ -738,22 +780,84 @@ export class VectorizationService {
     chunkingOptions?: ChunkingOptions,
     _modality?: VectorModality
   ): Promise<string[]> {
-    // TODO: Implement chunking with LangChain TextSplitter
-    // For now, simple fixed-size chunks
-    if (typeof content === 'string') {
-      const chunkSize = chunkingOptions?.chunkSize || 1000;
-      const overlap = chunkingOptions?.chunkOverlap || 100;
-      const chunks: string[] = [];
-
-      for (let i = 0; i < content.length; i += chunkSize - overlap) {
-        chunks.push(content.slice(i, i + chunkSize));
-      }
-
-      return chunks;
-    } else {
+    if (typeof content !== 'string') {
       // For binary content, return as single chunk
       return ['binary_data'];
     }
+
+    const chunkSize = chunkingOptions?.chunkSize || 1000;
+    const overlap = chunkingOptions?.chunkOverlap || 200;
+    const chunks: string[] = [];
+
+    // Split by paragraphs first, then by sentences if needed
+    const separators = ['\n\n', '\n', '. ', ', ', ' '];
+
+    let text = content;
+    let currentChunk = '';
+
+    const splitText = (
+      txt: string,
+      sepIndex: number = 0
+    ): string[] => {
+      if (sepIndex >= separators.length) {
+        // No more separators, split by character
+        const result: string[] = [];
+        for (let i = 0; i < txt.length; i += chunkSize - overlap) {
+          result.push(txt.slice(i, i + chunkSize));
+        }
+        return result;
+      }
+
+      const sep = separators[sepIndex];
+      const parts = txt.split(sep);
+
+      if (parts.length === 1) {
+        // Separator not found, try next
+        return splitText(txt, sepIndex + 1);
+      }
+
+      return parts.flatMap((part, i) =>
+        i < parts.length - 1 ? [part + sep] : [part]
+      );
+    };
+
+    const textParts = splitText(text);
+
+    for (const part of textParts) {
+      if (currentChunk.length + part.length <= chunkSize) {
+        currentChunk += part;
+      } else {
+        if (currentChunk.length > 0) {
+          chunks.push(currentChunk.trim());
+        }
+
+        // If part is larger than chunkSize, split it further
+        if (part.length > chunkSize) {
+          const subChunks = splitText(part, 1);
+          for (const subChunk of subChunks) {
+            if (subChunk.length <= chunkSize) {
+              chunks.push(subChunk.trim());
+            } else {
+              // Final fallback: hard split
+              for (let i = 0; i < subChunk.length; i += chunkSize - overlap) {
+                chunks.push(subChunk.slice(i, i + chunkSize).trim());
+              }
+            }
+          }
+          currentChunk = '';
+        } else {
+          // Add overlap from previous chunk
+          const overlapStart = Math.max(0, currentChunk.length - overlap);
+          currentChunk = currentChunk.slice(overlapStart) + part;
+        }
+      }
+    }
+
+    if (currentChunk.trim().length > 0) {
+      chunks.push(currentChunk.trim());
+    }
+
+    return chunks.filter(chunk => chunk.length > 0);
   }
 
   private async embedChunks(
