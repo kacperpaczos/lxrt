@@ -1,75 +1,46 @@
 # LXRT - Development Roadmap
 
-**Ostatnia aktualizacja:** 2026-01-29  
-**Status:** Aktywny rozwój
+**Version:** `0.7.1` (Upcoming)
+**Status:** Planning / Active Development
 
 ---
 
-## 📋 DO ZROBIENIA (TODO)
-(Brak zaplanowanych zadań w tym momencie)
+## 📅 v0.7.1 Goals
+
+### 1. OCR Model Improvements
+**Priority:** High
+**Status:** Planned
+
+The current OCR model needs refinement to provide more rich metadata similar to the other modalities.
+- [ ] **Metadata Extraction:** Enhance `recognize()` to return per-word confidence scores and bounding boxes (`bbox`) instead of placeholders.
+- [ ] **Backend Integration:** Fully integrate `BackendSelector` into `OCRModel` for better device management (WebGPU/WASM/Node).
+- [ ] **Types:** Ensure strict typing for new metadata fields.
+
+### 2. Test Coverage Expansion
+**Priority:** High
+**Status:** Planned
+
+Increase test coverage to ensure stability of the newly added features (JSON Mode, Tools).
+- [ ] **JSON Mode Edge Cases:** Verify handling of malformed JSON responses and recovery.
+- [ ] **Tool Calling Scenarios:** Test complex multi-tool scenarios.
+- [ ] **OCR Metadata:** Add tests for new bbox/confidence outputs.
 
 ---
 
-## ✅ ZAKOŃCZONE (DONE)
+## 🔮 Future Work (v0.8.0 candidate)
 
-### Krytyczne (P0)
-- [x] **WebGPU Backend** — Full WebGPU acceleration support (10-50x speedup)
-- [x] **countTokens()** — `provider.countTokens(text)`
-- [x] **getContextWindow()** — `provider.getContextWindow()`
-- [x] **Interface Consistency** — `ILLMModel` z `countTokens` i `getContextWindow`
-- [x] **Spin-Lock Removal** — Promise-based `loadingPromise` we wszystkich modelach
-- [x] **ModelManager Concurrency** — Race condition fix z deferred promise
-- [x] **Abort/Cancel dla Inference** — Pełne wsparcie `AbortSignal`
-- [x] **JSON Mode** — `responseFormat: { type: 'json_object' }` (Prompt Injection)
-- [x] **Function Calling** — `tools` API Support (Prompt Injection & Parsing)
+### 3. Agentic & UI Features
+**Priority:** Medium/High
+**Status:** Backlog
 
-### Wysokie (P1)
-- [x] **AbortSignal Support** — `signal?: AbortSignal` w `ChatOptions`
+To support more advanced use cases like autonomous agents and easy implementations.
 
-### Średnie (P2)
-- [x] **Adaptery Integracji** — LangChain (`@lxrt/langchain`), Vercel AI SDK (`@lxrt/vercel-ai`), Stagehand (`@lxrt/stagehand`)
-- [x] **CLI Zarządzania Modelami** — `lxrt pull`/`list`/`remove`
-- [x] **VectorizationService Enhancements** — PDF (`pdf-parse`), DOCX (`mammoth`), Smart TextSplitter
-- [x] **Logger Cleanup** — LogBus integration
-- [x] **Fix Path Aliases** — `tsc-alias` w build pipeline
-- [x] **Fix ONNX Conflict** — Usunięto bezpośrednią zależność
-- [x] **Typy Eventów** — `ProgressEvent`, `ReadyEvent` wyeksportowane
-- [x] **Docs Streaming** — Dokumentacja `provider.stream()`
-- [x] **Model Registry & Types** — Type-safe model selection
-- [x] **Robust Integration Testing** — Golden datasets, semantic assertions
-- [x] **Test Quality Review** — 3-tier architecture, fixtures
-- [x] **Stagehand Interface** — `StagehandAdapter` z OpenAI-compatible API
-- [x] **JSDOM Refactor** — Dynamic `await import('jsdom')`
-- [x] **Unit Tests** — STT, TTS, OCR model tests
-- [x] **Integration Tests** — `concurrent-load.test.ts`, `abort-signal.test.ts`
-- [x] **Job Cancellation w Hooks** — AbortController w React/Vue
-
-### Niskie (P3)
-- [x] **Model Persistence Test** — `model-persistence.test.ts`
-- [x] **LogBus** — `src/core/logging/LogBus.ts` z subscribe()
-- [x] **ErrorPattern Enum** — 10 patternów + `LxrtError` base class
-- [x] **BaseModel implements IModel**
-- [x] **StagehandAdapter typed** — Usunięto `any`
-- [x] **Refactor Error to ModelNotLoadedError**
-- [x] **Unify Error Strings** — Error message constants
-- [x] **GitHub Actions CI** — `.github/workflows/ci.yml`
-
-### Auto-Tuning System (Fazy 0-5)
-- [x] **Faza 0:** Model Presets (`chat-light`, `embedding-quality`)
-- [x] **Faza 1:** Model Selection (auto-wybór na podstawie RAM, GPU)
-- [x] **Faza 2:** DType Selection (auto kwantyzacja fp16/q8/q4)
-- [x] **Faza 3:** Performance Mode (fast/balanced/quality)
-- [x] **Faza 4:** WASM Threads (thread count optimization)
-- [x] **Faza 5:** Context/Tokens Limits (OOM prevention)
+- [ ] **Agentic Examples:** Create robust examples demonstrating "Long-term Memory" (using Vector Store) and multi-step reasoning.
+- [ ] **UI Library:** Develop a set of ready-to-use React/Vue components (e.g., `<ChatWindow />`, `<AudioVisualizer />`) to speed up frontend integration.
 
 ---
 
-## 📊 Podsumowanie
+## ✅ Completed (Archived)
 
-| Kategoria | Do zrobienia | Zakończone |
-|-----------|--------------|------------|
-| 🔴 Krytyczne | 0 | 9 |
-| 🟡 Wysokie | 0 | 1 |
-| 🟢 Średnie | 0 | 16 |
-| 🔵 Niskie | 0 | 8 |
-| **Razem** | **0** | **34** |
+Detailed history of completed features can be found in `CHANGELOG.md`.
+- **v0.7.0 Features:** Abort/Cancel, JSON Mode, Function Calling, WebGPU Backend.

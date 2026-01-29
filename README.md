@@ -1,6 +1,6 @@
 <div align="center">
 
-# LXRT — Lokalna Infrastruktura AI
+# LXRT — Local AI Infrastructure
 
 `transformers.js` · `llm` · `tts/stt` · `embeddings` · `ocr` · `vectorization` · `web-workers`
 
@@ -8,52 +8,52 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.0-blue.svg)](https://www.typescriptlang.org/)
 
-**Biblioteka TypeScript do uruchamiania modeli AI w jednolitej infrastrukturze**
+**TypeScript library for running AI models in a unified infrastructure**
 
 </div>
 
 ---
 
-## Dlaczego LXRT?
+## Why LXRT?
 
-| Cecha | Opis |
+| Feature | Description |
 |-------|------|
-| 🔒 **Local-first** | Prywatność, niższe koszty, niższe opóźnienia |
-| 🎯 **Jedna warstwa infrastruktury** | Modele, cache, workery, backend (WebGPU/WASM/Node), progress, vector store |
-| 🔌 **Gotowe integracje** | OpenAI-compatible, LangChain, React/Vue hooks |
-| 🎭 **Multi-modalne** | LLM, TTS, STT, Embeddings, OCR, audio/video/image vectorization dla RAG |
-| 🚀 **WebGPU Ready** | Automatyczna akceleracja sprzętowa (10-50x faster) w przeglądarce |
-| 📝 **TypeScript-first** | Pełne typowanie, czyste API |
+| 🔒 **Local-first** | Privacy, lower costs, lower latency |
+| 🎯 **Unified Infrastructure Layer** | Models, cache, workers, backend (WebGPU/WASM/Node), progress, vector store |
+| 🔌 **Ready-made Integrations** | OpenAI-compatible, LangChain, React/Vue hooks |
+| 🎭 **Multi-modal** | LLM, TTS, STT, Embeddings, OCR, audio/video/image vectorization for RAG |
+| 🚀 **WebGPU Ready** | Automatic hardware acceleration (10-50x faster) in the browser |
+| 📝 **TypeScript-first** | Full typing, clean API |
 
 ---
 
-## Instalacja
+## Installation
 
 ```bash
 npm install lxrt @huggingface/transformers
-# lub yarn / pnpm
+# or yarn / pnpm
 ```
 
-## CLI (Zarządzanie Modelami)
+## CLI (Model Management)
 
-LXRT udostępnia narzędzie wiersza poleceń do zarządzania lokalnymi modelami:
+LXRT provides a CLI tool for managing local models:
 
 ```bash
-# Pobranie modelu z Hugging Face Hub (z paskiem postępu)
+# Download model from Hugging Face Hub (with progress bar)
 npx lxrt pull Xenova/Qwen1.5-0.5B-Chat --dtype q4
 
-# Lista pobranych modeli
+# List downloaded models
 npx lxrt list
 
-# Usunięcie modelu
+# Remove model
 npx lxrt remove Xenova/Qwen1.5-0.5B-Chat
 ```
 
 ---
 
-## Szybki Start
+## Quick Start
 
-### Podstawowy chat z LLM
+### Basic LLM Chat
 
 ```typescript
 import { createAIProvider } from 'lxrt';
@@ -67,43 +67,43 @@ const provider = createAIProvider({
 });
 
 const reply = await provider.chat([
-  { role: 'user', content: 'Cześć, LXRT!' }
+  { role: 'user', content: 'Hello, LXRT!' }
 ]);
 console.log(reply.content);
 ```
 
-### Multi-modalna konfiguracja
+### Multi-modal Configuration
 
 ```typescript
 const provider = createAIProvider({
   llm: { model: 'onnx-community/Qwen2.5-0.5B-Instruct', dtype: 'q4' },
   tts: { model: 'Xenova/speecht5_tts', dtype: 'fp32' },
-  stt: { model: 'Xenova/whisper-tiny', dtype: 'fp32', language: 'pl' },
+  stt: { model: 'Xenova/whisper-tiny', dtype: 'fp32', language: 'en' },
   embedding: { model: 'Xenova/all-MiniLM-L6-v2', dtype: 'fp32' },
-  ocr: { language: ['pol', 'eng'] },
+  ocr: { language: ['eng'] },
 });
 ```
 
 ---
 
-## Kluczowe Możliwości
+## Key Features
 
 ### 💬 LLM / Chat
 
 ```typescript
-// Chat z historią
+// Chat with history
 const response = await provider.chat([
-  { role: 'system', content: 'Jesteś pomocnym asystentem.' },
-  { role: 'user', content: 'Czym jest TypeScript?' },
+  { role: 'system', content: 'You are a helpful assistant.' },
+  { role: 'user', content: 'What is TypeScript?' },
 ]);
 
 // Streaming
-for await (const token of provider.stream('Opowiedz historię')) {
+for await (const token of provider.stream('Tell me a story')) {
   process.stdout.write(token);
 }
 
 // JSON Mode
-const jsonRel = await provider.chat('Wymień 3 miasta w JSON', {
+const jsonRel = await provider.chat('List 3 cities in JSON', {
   responseFormat: { type: 'json_object' }
 });
 
@@ -115,7 +115,7 @@ const tools = [{
     parameters: { type: 'object', properties: { location: { type: 'string' } } }
   }
 }];
-const toolRes = await provider.chat('Jaka pogoda w Warszawie?', { tools });
+const toolRes = await provider.chat('What is the weather in Warsaw?', { tools });
 console.log(toolRes.toolCalls); // [{ name: 'get_weather', arguments: '{"location":"Warszawa"}' }]
 
 ```
@@ -123,7 +123,7 @@ console.log(toolRes.toolCalls); // [{ name: 'get_weather', arguments: '{"locatio
 ### 🔊 TTS (Text-to-Speech)
 
 ```typescript
-const audio = await provider.speak('Witaj świecie!', {
+const audio = await provider.speak('Hello world!', {
   voiceProfile: 'professional-female',
 });
 ```
@@ -132,115 +132,115 @@ const audio = await provider.speak('Witaj świecie!', {
 
 ```typescript
 const text = await provider.listen(audioBlob, {
-  language: 'pl',
+  language: 'en',
 });
 ```
 
-### 📸 OCR
+### 📸 OCR (Text Recognition)
 
 ```typescript
 const result = await provider.recognize(imageFile, {
-  language: ['pol', 'eng'],
+  language: ['eng'],
   autoLanguage: true,
 });
 console.log(result.text);
 ```
 
-### 🧮 Embeddingi i Wyszukiwanie Semantyczne
+### 🧮 Embeddings and Semantic Search
 
 ```typescript
-// Embeddingi
-const vectors = await provider.embed(['tekst 1', 'tekst 2']);
+// Embeddings
+const vectors = await provider.embed(['text 1', 'text 2']);
 
-// Podobieństwo
-const score = await provider.similarity('Kocham programowanie', 'Uwielbiam kodować');
+// Similarity
+const score = await provider.similarity('I love programming', 'I like coding');
 
-// Wyszukiwanie
-const result = await provider.findSimilar('Kot na macie', dokumenty);
+// Search
+const result = await provider.findSimilar('Cat on mat', documents);
 ```
 
-### 📊 Wektoryzacja (RAG)
+### 📊 Vectorization (RAG)
 
-Wsparcie dla plików tekstowych, **PDF** oraz **DOCX**:
+Support for text files, **PDF** and **DOCX**:
 
 ```typescript
 await provider.initializeVectorization({ storage: 'indexeddb' });
 
-// Automatyczna ekstrakcja tekstu z PDF/DOCX
+// Automatic text extraction from PDF/DOCX
 await provider.indexFiles([
-    new File([pdfBlob], "dokument.pdf", { type: "application/pdf" }),
-    new File([docxBlob], "pismo.docx", { type: "application/vnd.openxmlformats-officedocument.wordprocessingml.document" })
+    new File([pdfBlob], "document.pdf", { type: "application/pdf" }),
+    new File([docxBlob], "letter.docx", { type: "application/vnd.openxmlformats-officedocument.wordprocessingml.document" })
 ]);
 
-const results = await provider.queryVectors('Jak działa AI?');
+const results = await provider.queryVectors('How does AI work?');
 ```
 
-### 🎯 Model Registry i Type Safety
+### 🎯 Model Registry and Type Safety
 
-LXRT zapewnia **type-safe model registry** z auto-completion dla wspieranych modeli:
+LXRT provides a **type-safe model registry** with auto-completion for supported models:
 
 ```typescript
 import { createAIProvider, type SupportedLLM, MODEL_REGISTRY, getModelInfo } from 'lxrt';
 
-// ✅ Auto-completion dla znanych modeli
+// ✅ Auto-completion for known models
 const model: SupportedLLM = 'Xenova/Qwen1.5-0.5B-Chat';
 
-// ✅ Nadal można używać dowolnych stringów
+// ✅ You can still use arbitrary strings
 const customModel = 'my-org/my-custom-model';
 
-// Pobranie informacji o modelu
+// Get model info
 const info = getModelInfo('llm', 'Xenova/Qwen1.5-0.5B-Chat');
 console.log(info?.contextWindow); // 32768
 console.log(info?.family); // 'qwen'
 
-// Przeglądanie wszystkich modeli
+// Browse all models
 console.log(MODEL_REGISTRY.llm);
 console.log(MODEL_REGISTRY.embedding);
 ```
 
 ### 🏷️ Model Presets (Semantic Naming)
 
-LXRT oferuje **presety** - semantyczne nazwy dla modeli, ułatwiające wybór odpowiedniego rozwiązania bez znania konkretnych ID.
+LXRT offers **presets** - semantic names for models, simplifying choice without knowing specific IDs.
 
 ```typescript
 const provider = createAIProvider({
-  // Zamiast 'Xenova/Qwen1.5-0.5B-Chat'
+  // Instead of 'Xenova/Qwen1.5-0.5B-Chat'
   llm: { model: 'chat-light' },
   
-  // Zamiast 'Xenova/all-MiniLM-L6-v2'
+  // Instead of 'Xenova/all-MiniLM-L6-v2'
   embedding: { model: 'embedding-quality' },
   
-  // Działa też 'fast', 'balanced', 'quality'
+  // Also works with 'fast', 'balanced', 'quality'
   stt: { model: 'fast' }
 });
 ```
 
-**Dostępne presety (LLM):**
+**Available presets (LLM):**
 - `tiny` (<1GB, GPT-2)
 - `chat-light` (~2GB, Qwen 1.5 0.5B)
 - `chat-medium` (~4GB, Phi-3 Mini)
 - `chat-heavy` (>4GB, Gemma 2B)
 - `fast` / `balanced` / `quality`
 
-### 🎛️ Auto-Tuning (Inteligentny Wybór Modelu)
+### 🎛️ Auto-Tuning (Smart Model Selection)
 
-LXRT potrafi **automatycznie dobrać najlepszy model** na podstawie Twojego sprzętu (RAM, GPU). Wystarczy dodać flagę `autoTune: true`:
+LXRT can **automatically select the best model** based on your hardware (RAM, GPU). Just add the `autoTune: true` flag:
 
 ```typescript
 const provider = createAIProvider({
   llm: { 
-    model: 'chat', // ogólna intencja
-    autoTune: true // pozwól na automatyczny dobór
+    model: 'chat', // general intent
+    autoTune: true // allow automatic selection
   }
 });
 
-// Wynik autotuningu:
+// Auto-tuning result:
 // - High-end PC (32GB RAM + GPU) -> 'chat-heavy' (Gemma 2B)
 // - Laptop (8GB RAM) -> 'chat-medium' (Phi-3 Mini)
-// - Słaby sprzęt / Browser -> 'chat-light' (Qwen 0.5B)
+// - Low-end hardware / Browser -> 'chat-light' (Qwen 0.5B)
 ```
 
-### 🔢 Liczenie Tokenów i Context Window
+### 🔢 Token Counting and Context Window
 
 ```typescript
 const provider = createAIProvider({
@@ -249,23 +249,23 @@ const provider = createAIProvider({
 
 await provider.warmup('llm');
 
-// Sprawdź rozmiar okna kontekstowego
+// Check context window size
 const contextWindow = provider.getContextWindow(); // 32768
 
-// Policz tokeny w tekście
-const text = 'To jest przykładowy tekst do analizy.';
-const tokenCount = provider.countTokens(text); // ~12
+// Count tokens in text
+const text = 'This is a sample text for analysis.';
+const tokenCount = provider.countTokens(text); // ~10
 
-// Upewnij się że tekst mieści się w oknie
+// Ensure text fits within the window
 if (tokenCount > contextWindow - 512) {
-  // Obetnij tekst aby zmieścił się w limicie
-  console.warn('Tekst za długi, obcinanie...');
+  // Truncate text to fit limit
+  console.warn('Text too long, truncating...');
 }
 ```
 
 ---
 
-## Adaptery
+## Adapters
 
 ### OpenAI-compatible
 
@@ -275,13 +275,13 @@ import { OpenAIAdapter } from 'lxrt';
 const client = new OpenAIAdapter(provider);
 const resp = await client.chat.completions.create({
   model: 'local-llm',
-  messages: [{ role: 'user', content: 'Cześć!' }],
+  messages: [{ role: 'user', content: 'Hello!' }],
 });
 ```
 
 ### ✅ Vercel AI SDK
 
-Adapter umożliwia użycie LXRT jako dostawcy w Vercel AI SDK (streaming response):
+Adapter allows using LXRT as a provider in Vercel AI SDK (streaming response):
 
 ```typescript
 import { createVercelProvider } from 'lxrt/adapters';
@@ -290,19 +290,19 @@ import { streamText } from 'ai';
 const provider = createVercelProvider(lxrtProvider);
 const result = await streamText({
   model: provider.languageModel('local-model'),
-  prompt: 'Dlaczego niebo jest niebieskie?',
+  prompt: 'Why is the sky blue?',
 });
 ```
 
 ### 🎭 Stagehand (Browser Automation)
 
-Użyj LXRT do sterowania przeglądarką w Stagehand:
+Use LXRT to control the browser in Stagehand:
 
 ```typescript
 import { StagehandAdapter } from 'lxrt/adapters';
 
 const model = new StagehandAdapter(provider, 'Xenova/Qwen1.5-0.5B-Chat');
-// Użyj 'model' w konfiguracji Stagehand
+// Use 'model' in Stagehand configuration
 ```
 
 ### 🦜🔗 LangChain
@@ -311,7 +311,7 @@ const model = new StagehandAdapter(provider, 'Xenova/Qwen1.5-0.5B-Chat');
 import { createLangChainLLM } from 'lxrt/adapters';
 
 const llm = createLangChainLLM(provider);
-const res = await llm.invoke('Opowiedz żart o kotach');
+const res = await llm.invoke('Tell me a joke about cats');
 ```
 
 ---
@@ -329,7 +329,7 @@ function Chat() {
   return (
     <div>
       {messages.map((m, i) => <div key={i}>{m.content}</div>)}
-      <button onClick={() => sendMessage('Cześć!')}>Wyślij</button>
+      <button onClick={() => sendMessage('Hello!')}>Send</button>
     </div>
   );
 }
@@ -341,43 +341,43 @@ function Chat() {
 import { useChat } from 'lxrt/vue';
 
 const { messages, sendMessage, isLoading } = useChat();
-await sendMessage('Cześć!');
+await sendMessage('Hello!');
 ```
 
 ---
 
-## Postęp Ładowania
+## Loading Progress
 
 ```typescript
 provider.on('progress', ({ modality, file, progress }) => {
-  console.log(`Ładowanie ${modality}: ${file} (${progress}%)`);
+  console.log(`Loading ${modality}: ${file} (${progress}%)`);
 });
 
 provider.on('ready', ({ modality }) => {
-  console.log(`✓ ${modality} gotowy`);
+  console.log(`✓ ${modality} ready`);
 });
 ```
 
 ---
 
-## Konfiguracja
+## Configuration
 
-| Opcja | Wartości | Opis |
+| Option | Values | Description |
 |-------|----------|------|
 | **Backend** | `webgpu` / `wasm` / `node` | Auto-fallback |
-| **DType** | `fp32` / `fp16` / `q8` / `q4` / `q4f16` | Precyzja modelu |
-| **Cache** | Automatyczny | Przechowywanie i ponowne użycie modeli |
-| **Workers** | Web Workers | Ciężkie obliczenia poza main thread |
-| **Vector Store** | IndexedDB | Lokalne przechowywanie dla RAG |
+| **DType** | `fp32` / `fp16` / `q8` / `q4` / `q4f16` | Model Precision |
+| **Cache** | Automatic | Caching and reusing models |
+| **Workers** | Web Workers | Heavy computations off main thread |
+| **Vector Store** | IndexedDB | Local storage for RAG |
 
 ---
 
-## Architektura
+## Architecture
 
 ```
 ┌─────────────────────────────────────────────────────┐
 │                    AIProvider                        │
-│  (fasada główna - chat/speak/listen/embed/ocr)      │
+│  (main facade - chat/speak/listen/embed/ocr)        │
 ├──────────────┬──────────────┬───────────────────────┤
 │   Models     │   Services   │    Infrastructure     │
 ├──────────────┼──────────────┼───────────────────────┤
@@ -392,40 +392,40 @@ provider.on('ready', ({ modality }) => {
    Transformers.js              Tesseract.js
 ```
 
-Szczegółowy opis: [ARCHITECTURE.md](./ARCHITECTURE.md)
+Detailed description: [ARCHITECTURE.md](./ARCHITECTURE.md)
 
 ---
 
-## Dokumentacja
+## Documentation
 
-| Dokument | Opis |
+| Document | Description |
 |----------|------|
-| [API.md](./API.md) | Pełna dokumentacja API |
-| [ARCHITECTURE.md](./ARCHITECTURE.md) | Architektura i relacje między komponentami |
-| [WEBGPU_GUIDE.md](./docs/WEBGPU_GUIDE.md) | Przewodnik po akceleracji WebGPU |
-| [EXAMPLES.md](./EXAMPLES.md) | Przykłady użycia |
+| [API.md](./API.md) | Full API Documentation |
+| [ARCHITECTURE.md](./ARCHITECTURE.md) | Architecture and component relationships |
+| [WEBGPU_GUIDE.md](./docs/WEBGPU_GUIDE.md) | WebGPU Acceleration Guide |
+| [EXAMPLES.md](./EXAMPLES.md) | Usage Examples |
 
 ---
 
-## Przykłady
+## Examples
 
-Katalog [`examples/`](./examples/) zawiera:
+The [`examples/`](./examples/) directory contains:
 
-- `basic.js` - Podstawowe użycie
+- `basic.js` - Basic usage
 - `multimodal.js` - LLM + TTS + STT + Embeddings
-- `agent-integration.js` - Integracja z agentami AI
-- `ocr-basic.js` - Rozpoznawanie tekstu OCR
-- `tts-voice-profiles.js` - Profile głosowe TTS
-- `react-chat-example.tsx` - Hook React
-- `vue-chat-example.vue` - Composable Vue
+- `agent-integration.js` - Integration with AI agents
+- `ocr-basic.js` - Text recognition (OCR)
+- `tts-voice-profiles.js` - TTS Voice profiles
+- `react-chat-example.tsx` - React Hook
+- `vue-chat-example.vue` - Vue Composable
 - `worker-chat.html` - Web Workers
 
 ---
 
-## Wymagania
+## Requirements
 
 - Node.js >= 24.13.0
-- Przeglądarka z WebGPU (opcjonalnie, fallback do WASM)
+- Browser with WebGPU (optional, fallback to WASM)
 
 ### Peer Dependencies
 
@@ -437,14 +437,14 @@ Katalog [`examples/`](./examples/) zawiera:
 
 ---
 
-## Licencja
+## License
 
 MIT © [Kacper Paczos](https://github.com/kacperpaczos)
 
 ---
 
-## Linki
+## Links
 
 - [GitHub](https://github.com/kacperpaczos/lxrt)
 - [npm](https://www.npmjs.com/package/lxrt)
-- [Zgłoś problem](https://github.com/kacperpaczos/lxrt/issues)
+- [Report an issue](https://github.com/kacperpaczos/lxrt/issues)
