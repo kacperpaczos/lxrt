@@ -613,10 +613,10 @@ const provider = createAIProvider({
   - **Co:** Dodano `signal?: AbortSignal` do `ChatOptions` i `CompletionOptions`
   - **Status:** ✅ DONE — Przekazuje `abort_signal` do Transformers.js pipeline
 
-- [ ] **Stworzyć GitHub Actions CI workflow**
-  - **Plik:** `.github/workflows/ci.yml` (nowy)
+- [x] **Stworzyć GitHub Actions CI workflow**
+  - **Plik:** `.github/workflows/ci.yml`
   - **Co:** Build + lint + test:unit + npm audit na każdy PR
-  - **Effort:** 1 dzień
+  - **Status:** ✅ DONE — Workflow z matrix Node 18/20/22
 
 - [ ] **Usunąć/zastąpić debug console.log Loggerem**
   - **Zakres:** 150 statements w `src/` (głównie `src/models/`)
@@ -643,49 +643,33 @@ const provider = createAIProvider({
   - **Lokalizacje:** L725, L740
   - **Effort:** 3-5 dni
 
-- [ ] **Dodać job cancellation do React/Vue hooks**
+- [x] **Dodać job cancellation do React/Vue hooks**
   - **Pliki:** `src/ui/react/useVectorization.ts`, `src/ui/vue/useVectorization.ts`
-  - **Effort:** 4h
+  - **Status:** ✅ DONE — AbortController-based cancelJob
 
 ---
 
 ### 🔵 P3 — Niskie / Rekomendacje
 
-- [ ] **Weryfikacja cache modeli (Model Persistence Test)**
-  - **Cel:** Upewnić się, że LXRT pamięta załadowany model i nie pobiera go za każdym razem
-  - **Co:** Dodać integration test sprawdzający że 2x warmup() nie powoduje 2x download
-  - **Effort:** 2h
+- [x] **Weryfikacja cache modeli (Model Persistence Test)**
+  - **Plik:** `tests/node/integration/model-persistence.test.ts`
+  - **Status:** ✅ DONE — Test 2x warmup ≠ 2x download
 
-- [ ] **Zaprojektować szynę logów (Logging Bus)**
-  - **Cel:** Centralny system logowania dostępny dla developerów i testów
-  - **Wymagania:**
-    - Interface `LogBus` z metodami `log()`, `warn()`, `error()`, `debug()`
-    - Możliwość subskrypcji logów w testach (`logBus.subscribe()`)
-    - Integracja z istniejącym `Logger` z `domain/logging/`
-  - **Effort:** 1-2 dni
+- [x] **Zaprojektować szynę logów (Logging Bus)**
+  - **Plik:** `src/core/logging/LogBus.ts`
+  - **Status:** ✅ DONE — LogBus z subscribe(), getHistory(), withSource()
 
-- [ ] **Wprowadzić enum ErrorPattern dla całej aplikacji**
-  - **Cel:** Type-safe error patterns zamiast string matching
-  - **Wymagania:**
-    ```typescript
-    export enum ErrorPattern {
-      MODEL_NOT_LOADED = 'MODEL_NOT_LOADED',
-      MODEL_LOAD_FAILED = 'MODEL_LOAD_FAILED',
-      INFERENCE_ABORTED = 'INFERENCE_ABORTED',
-      VALIDATION_FAILED = 'VALIDATION_FAILED',
-      // ...
-    }
-    ```
-  - **Gdzie użyć:** `src/domain/errors.ts`, wszystkie klasy błędów
-  - **Effort:** 0.5 dnia
+- [x] **Wprowadzić enum ErrorPattern dla całej aplikacji**
+  - **Plik:** `src/domain/errors/index.ts`
+  - **Status:** ✅ DONE — 10 patternów + LxrtError base class + isLxrtError() helper
 
-- [ ] **Dodać `implements IModel` do BaseModel**
-  - **Plik:** `src/models/BaseModel.ts` L8
-  - **Effort:** 30min
+- [x] **Dodać `implements IModel` do BaseModel**
+  - **Plik:** `src/models/BaseModel.ts`
+  - **Status:** ✅ DONE
 
-- [ ] **Usunąć pozostałe `any` w StagehandAdapter**
-  - **Plik:** `src/adapters/StagehandAdapter.ts` L26, L57
-  - **Effort:** 1h
+- [x] **Usunąć pozostałe `any` w StagehandAdapter**
+  - **Plik:** `src/adapters/StagehandAdapter.ts`
+  - **Status:** ✅ DONE — embeddings typed response
 
 ---
 
