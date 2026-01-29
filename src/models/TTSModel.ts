@@ -72,25 +72,13 @@ export class TTSModel extends BaseModel<TTSConfig> {
           console.log('[TTSModel] load(): transformers loaded');
         }
 
-        const isBrowser =
-          typeof window !== 'undefined' && typeof navigator !== 'undefined';
-        const supportsWebGPU =
-          isBrowser &&
-          typeof (navigator as unknown as { gpu?: unknown }).gpu !==
-            'undefined';
-        let webgpuAdapterAvailable = false;
-        if (supportsWebGPU) {
-          try {
-            const navWithGpu = navigator as unknown as {
-              gpu?: { requestAdapter?: () => Promise<unknown> };
-            };
-            const adapter = await (navWithGpu.gpu?.requestAdapter?.() ||
-              Promise.resolve(null));
-            webgpuAdapterAvailable = !!adapter;
-          } catch {
-            webgpuAdapterAvailable = false;
-          }
-        }
+        const isBrowser = typeof window !== 'undefined' && typeof navigator !== 'undefined';
+
+        // Use centralized GPU detector
+        const { gpuDetector } = await import('../core/gpu');
+        const gpuCaps = await gpuDetector.detect();
+        const supportsWebGPU = gpuDetector.supportsWebGPUApi();
+        const webgpuAdapterAvailable = gpuCaps.webgpuAvailable;
 
         // Use BackendSelector if available, otherwise fallback to old logic
         const desiredDevice = this.config.device as string | undefined;

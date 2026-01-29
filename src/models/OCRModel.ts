@@ -59,10 +59,31 @@ export class OCRModel extends BaseModel<OCRConfig> {
       try {
         // Try to use Transformers.js OCR pipeline instead of Tesseract.js
         // This provides better Node.js compatibility
+
+        // Use centralized GPU detector
+        const { gpuDetector } = await import('../core/gpu');
+        const gpuCaps = await gpuDetector.detect();
+        const webgpuAdapterAvailable = gpuCaps.webgpuAvailable;
+
+        // Get transformers pipeline factory
         const { pipeline } = await getTransformers();
 
+        // Determine best device
+        // TODO: Integrate BackendSelector if needed (currently not injected in OCRModel)
+        const desiredDevice = this.config.device;
+        let device = desiredDevice || 'cpu';
+
+        if (device === 'webgpu' && !webgpuAdapterAvailable) {
+          if (typeof console !== 'undefined' && console.warn) {
+            console.warn('[OCRModel] WebGPU requested but not available, falling back to wasm/cpu');
+          }
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          device = 'wasm' as any;
+        }
+
         this.pipeline = await pipeline('image-to-text', this.config.model, {
-          device: this.config.device || 'cpu',
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          device: device as any,
           dtype: this.config.dtype || 'fp32',
         });
 
@@ -133,18 +154,18 @@ export class OCRModel extends BaseModel<OCRConfig> {
         usedLanguage: Array.isArray(options.language)
           ? options.language[0]
           : options.language ||
-            (Array.isArray(this.config.language)
-              ? this.config.language[0]
-              : this.config.language) ||
-            'eng',
+          (Array.isArray(this.config.language)
+            ? this.config.language[0]
+            : this.config.language) ||
+          'eng',
         // Pola zgodne z oczekiwaniami testów
         language: Array.isArray(options.language)
           ? options.language[0]
           : options.language ||
-            (Array.isArray(this.config.language)
-              ? this.config.language[0]
-              : this.config.language) ||
-            'eng',
+          (Array.isArray(this.config.language)
+            ? this.config.language[0]
+            : this.config.language) ||
+          'eng',
         regions: [],
         detectedLanguages: [],
       };

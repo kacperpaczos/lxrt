@@ -68,6 +68,30 @@ Główna klasa fasadowa biblioteki.
 
 ### Metody LLM
 
+### Metody Globalne
+#### `setGlobalDevice(device)`
+
+Ustawia preferowane urządzenie dla wszystkich modeli.
+
+```typescript
+provider.setGlobalDevice('webgpu');
+```
+
+#### `getDeviceInfo()`
+
+Zwraca informacje o dostępnych urządzeniach (np. czy WebGPU jest wspierane).
+
+```typescript
+const info = await provider.getDeviceInfo();
+if (info.webgpuAvailable) {
+  console.log('WebGPU is ready:', info.adapterInfo);
+}
+```
+
+---
+
+### Metody LLM
+
 #### `chat(messages, options?)`
 
 Rozmowa z modelem LLM z obsługą historii wiadomości.
@@ -560,6 +584,10 @@ interface LLMConfig {
   topP?: number;
   topK?: number;
   repetitionPenalty?: number;
+  webgpuOptions?: {
+    powerPreference?: 'high-performance' | 'low-power';
+    forceFallbackAdapter?: boolean;
+  };
 }
 
 interface EmbeddingConfig {

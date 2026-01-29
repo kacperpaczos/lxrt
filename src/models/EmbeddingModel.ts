@@ -93,25 +93,13 @@ export class EmbeddingModel extends BaseModel<EmbeddingConfig> {
       try {
         const { pipeline, env } = await getTransformers();
 
-        const isBrowser =
-          typeof window !== 'undefined' && typeof navigator !== 'undefined';
-        const supportsWebGPU =
-          isBrowser &&
-          typeof (navigator as unknown as { gpu?: unknown }).gpu !==
-            'undefined';
-        let webgpuAdapterAvailable = false;
-        if (supportsWebGPU) {
-          try {
-            const navWithGpu = navigator as unknown as {
-              gpu?: { requestAdapter?: () => Promise<unknown> };
-            };
-            const adapter = await (navWithGpu.gpu?.requestAdapter?.() ||
-              Promise.resolve(null));
-            webgpuAdapterAvailable = !!adapter;
-          } catch {
-            webgpuAdapterAvailable = false;
-          }
-        }
+        const isBrowser = typeof window !== 'undefined' && typeof navigator !== 'undefined';
+
+        // Use centralized GPU detector
+        const { gpuDetector } = await import('../core/gpu');
+        const gpuCaps = await gpuDetector.detect();
+        const supportsWebGPU = gpuDetector.supportsWebGPUApi();
+        const webgpuAdapterAvailable = gpuCaps.webgpuAvailable;
 
         // Use BackendSelector if available, otherwise fallback to old logic
         const desiredDevice = this.config.device as string | undefined;
@@ -212,6 +200,9 @@ export class EmbeddingModel extends BaseModel<EmbeddingConfig> {
               device: dev,
               dtype,
             });
+            const { OnnxConfigurator } = await import('../core/gpu');
+            const sessionOptions = OnnxConfigurator.getSessionOptions(dev as any);
+
             this.pipeline = await pipeline(
               'feature-extraction',
               this.config.model,
@@ -219,6 +210,7 @@ export class EmbeddingModel extends BaseModel<EmbeddingConfig> {
                 dtype,
                 device: pipelineDevice,
                 progress_callback: progressCallback,
+                session_options: sessionOptions,
               }
             );
 
