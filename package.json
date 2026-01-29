@@ -45,10 +45,10 @@
   },
   "scripts": {
     "build": "tsc && tsc-alias",
-    "test": "jest --config jest.node.config.js",
+    "test": "npm run test:node:all",
     "test:unit": "jest --config jest.node.config.js --testPathPatterns=tests/node/unit",
     "test:node:unit": "jest --config jest.node.config.js --testPathPatterns=tests/node/unit",
-    "test:node:integration": "jest --config jest.node.config.js --testPathPatterns=tests/node/integration",
+    "test:node:integration": "jest --config jest.node.config.js --testPathPatterns=tests/node/integration --runInBand",
     "test:single": "jest --config jest.node.config.js",
     "test:node:all": "npm run test:node:unit && npm run test:node:integration",
     "test:node:example": "node --experimental-modules test-node-example.mjs",
