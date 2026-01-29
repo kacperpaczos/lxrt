@@ -35,8 +35,13 @@ export type Modality = 'llm' | 'tts' | 'stt' | 'embedding' | 'ocr';
 // Vectorization modalities (for multimedia embeddings)
 export type VectorModality = 'text' | 'audio' | 'image' | 'video'; // video→audio
 
-// Device types
-export type Device = 'cpu' | 'gpu' | 'webgpu';
+// Device Types
+export type Device = 'cpu' | 'gpu' | 'webgpu' | 'wasm' | 'auto';
+
+export interface WebGpuOptions {
+  powerPreference?: 'high-performance' | 'low-power' | 'default';
+  forceFallbackAdapter?: boolean;
+}
 
 // Precision types
 export type DType = 'fp32' | 'fp16' | 'q8' | 'q4' | 'q4f16';
@@ -60,6 +65,7 @@ export interface LLMConfig {
   topK?: number;
   repetitionPenalty?: number;
   threads?: number;
+  webgpuOptions?: WebGpuOptions;
 }
 
 // TTS Configuration
@@ -73,6 +79,7 @@ export interface TTSConfig {
   skip?: boolean; // Opcja do pomijania TTS
   performanceMode?: 'auto' | 'fast' | 'balanced' | 'quality';
   threads?: number;
+  webgpuOptions?: WebGpuOptions;
 }
 
 // STT Configuration
@@ -84,6 +91,7 @@ export interface STTConfig {
   language?: string;
   task?: 'transcribe' | 'translate';
   threads?: number;
+  webgpuOptions?: WebGpuOptions;
 }
 
 // Embedding Configuration
@@ -95,6 +103,7 @@ export interface EmbeddingConfig {
   pooling?: 'mean' | 'cls';
   normalize?: boolean;
   threads?: number;
+  webgpuOptions?: WebGpuOptions;
 }
 
 // OCR Configuration
@@ -105,6 +114,7 @@ export interface OCRConfig {
   language?: string | string[]; // e.g. 'eng', 'pol', ['eng', 'pol']
   performanceMode?: 'auto' | 'fast' | 'balanced' | 'quality';
   threads?: number;
+  webgpuOptions?: WebGpuOptions;
 }
 
 // Unified ModelConfig type
@@ -114,7 +124,10 @@ export type ModelConfig = (
   | STTConfig
   | EmbeddingConfig
   | OCRConfig
-) & { autoTune?: boolean };
+) & {
+  autoTune?: boolean;
+  webgpuOptions?: WebGpuOptions;
+};
 
 // AI Provider Configuration
 export interface AIProviderConfig {

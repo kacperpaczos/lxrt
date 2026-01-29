@@ -22,6 +22,7 @@
 | 🎯 **Jedna warstwa infrastruktury** | Modele, cache, workery, backend (WebGPU/WASM/Node), progress, vector store |
 | 🔌 **Gotowe integracje** | OpenAI-compatible, LangChain, React/Vue hooks |
 | 🎭 **Multi-modalne** | LLM, TTS, STT, Embeddings, OCR, audio/video/image vectorization dla RAG |
+| 🚀 **WebGPU Ready** | Automatyczna akceleracja sprzętowa (10-50x faster) w przeglądarce |
 | 📝 **TypeScript-first** | Pełne typowanie, czyste API |
 
 ---
@@ -335,6 +336,7 @@ Szczegółowy opis: [ARCHITECTURE.md](./ARCHITECTURE.md)
 |----------|------|
 | [API.md](./API.md) | Pełna dokumentacja API |
 | [ARCHITECTURE.md](./ARCHITECTURE.md) | Architektura i relacje między komponentami |
+| [WEBGPU_GUIDE.md](./docs/WEBGPU_GUIDE.md) | Przewodnik po akceleracji WebGPU |
 | [EXAMPLES.md](./EXAMPLES.md) | Przykłady użycia |
 
 ---

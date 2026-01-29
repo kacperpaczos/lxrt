@@ -36,7 +36,9 @@ import type {
   VectorizeOptions,
   QueryVectorizeOptions,
   VectorizationProgressEventData,
+  Device,
 } from '../core/types';
+import { gpuDetector, GpuCapabilities } from '../core/gpu/GpuDetector';
 
 export interface AIProviderOptions {
   skipCache?: boolean;
@@ -561,6 +563,27 @@ export class AIProvider {
       );
     }
     return yield* this.vectorizationService.queryWithProgress(input, options);
+  }
+
+  /**
+   * Set global device for all models
+   * @param device 'cpu', 'gpu', 'webgpu', 'wasm', 'auto'
+   */
+  public setGlobalDevice(device: Device): void {
+    const modalities: Modality[] = ['llm', 'tts', 'stt', 'embedding', 'ocr'];
+    modalities.forEach(mod => {
+      if (this.config[mod]) {
+        const modelConfig = this.config[mod] as any;
+        modelConfig.device = device;
+      }
+    });
+  }
+
+  /**
+   * Get device capabilities and WebGPU support status
+   */
+  public async getDeviceInfo(): Promise<GpuCapabilities> {
+    return await gpuDetector.detect();
   }
 
   /**

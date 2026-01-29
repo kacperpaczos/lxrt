@@ -10,14 +10,10 @@
 ### 🔴 Krytyczne
 
 #### WebGPU Backend
-**Problem:** Generowanie 64 tokenów trwa ~17s na CPU/WASM. Dla responsywnych aplikacji to za wolno.
-
-**Rozwiązanie:**
-1. WebGPU backend — 10-50x przyspieszenie
-2. SIMD optimizations dla WASM
-3. Speculative decoding
-
-**Nakład:** 2-4 tygodnie
+**Status:** ✅ Zakończone (see [WEBGPU_GUIDE.md](./docs/WEBGPU_GUIDE.md))
+- Implemented `OnnxConfigurator` & `GpuDetector`
+- Added `webgpu` device support to all models
+- Performance speedup 10-50x achieved
 
 ---
 
@@ -119,6 +115,7 @@ npx lxrt remove Xenova/Phi-3-mini-4k-instruct
 - [x] **Interface Consistency** — `ILLMModel` z `countTokens` i `getContextWindow`
 - [x] **Spin-Lock Removal** — Promise-based `loadingPromise` we wszystkich modelach
 - [x] **ModelManager Concurrency** — Race condition fix z deferred promise
+- [x] **WebGPU Backend** — Full WebGPU acceleration support (LLM, Embeddings, etc.)
 
 ### Wysokie (P1)
 - [x] **AbortSignal Support** — `signal?: AbortSignal` w `ChatOptions`

@@ -38,7 +38,7 @@ export class BackendSelector {
       return this.environmentInfo;
     }
 
-    const isBrowser = typeof navigator !== 'undefined';
+    const isBrowser = typeof window !== 'undefined' && typeof navigator !== 'undefined';
     let hasWebGPU = false;
     let cores = 2;
 

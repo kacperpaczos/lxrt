@@ -104,6 +104,9 @@ src/
 │
 ├── core/                       # Typy i encje domenowe
 │   ├── types.ts                # Wszystkie typy interfejsów
+│   ├── gpu/                    # GPU Detection & Config
+│   │   ├── GpuDetector.ts      # Detekcja WebGPU/Dawn
+│   │   └── OnnxConfigurator.ts # Konfiguracja sesji ONNX
 │   ├── VoiceProfile.ts         # Definicja profilu głosowego
 │   └── VoiceProfileRegistry.ts # Rejestr profili → używany przez TTSModel
 │
@@ -320,7 +323,7 @@ classDiagram
 
 ```mermaid
 flowchart TD
-    Start[Żądanie ładowania modelu] --> DetectEnv{Detekcja środowiska}
+    Start[Żądanie ładowania modelu] --> DetectEnv{GpuDetector}
     
     DetectEnv --> |Przeglądarka| BrowserCheck{WebGPU dostępne?}
     DetectEnv --> |Node.js| NodeCheck{GPU dostępne?}
