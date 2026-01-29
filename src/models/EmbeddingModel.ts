@@ -271,6 +271,7 @@ export class EmbeddingModel extends BaseModel<EmbeddingConfig> {
       const result = await pipeline(text, {
         pooling: options.pooling || this.config.pooling || 'mean',
         normalize: options.normalize ?? this.config.normalize ?? true,
+        abort_signal: options.signal,
       });
 
       // Type-safe conversion

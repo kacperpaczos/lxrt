@@ -128,6 +128,10 @@ console.log(response.usage);   // { promptTokens, completionTokens, totalTokens 
 | `repetitionPenalty` | `number` | 1.0 | Kara za powtórzenia |
 | `stopSequences` | `string[]` | - | Sekwencje zatrzymania |
 | `systemPrompt` | `string` | - | Prompt systemowy |
+| `signal` | `AbortSignal` | - | Sygnał przerwania |
+| `responseFormat` | `ResponseFormat` | - | `{ type: 'json_object' }` dla JSON |
+| `tools` | `Tool[]` | - | Definicje narzędzi |
+| `toolChoice` | `ToolChoice` | - | Wybór narzędzia |
 
 **Zwraca:** `Promise<ChatResponse>`
 
@@ -233,6 +237,7 @@ audio.play();
 | `pitch` | `number` | Wysokość głosu |
 | `emotion` | `VoiceEmotion` | Emocja głosu |
 | `format` | `'wav' \| 'mp3' \| 'ogg'` | Format wyjściowy |
+| `signal` | `AbortSignal` | Sygnał przerwania |
 
 **Zwraca:** `Promise<Blob>`
 
@@ -265,6 +270,7 @@ const text = await provider.listen(audioData, {
 | `language` | `string` | Język audio (np. 'pl', 'en') |
 | `task` | `'transcribe' \| 'translate'` | Zadanie |
 | `timestamps` | `boolean` | Zwróć znaczniki czasowe |
+| `signal` | `AbortSignal` | Sygnał przerwania |
 
 **Zwraca:** `Promise<string>`
 
@@ -320,7 +326,9 @@ interface OCRResult {
 Generacja embeddingów dla tekstu.
 
 ```typescript
-const embeddings = await provider.embed(['Tekst 1', 'Tekst 2']);
+const embeddings = await provider.embed(['Tekst 1', 'Tekst 2'], {
+  signal: abortController.signal
+});
 console.log(embeddings[0].length); // 384 (wymiar wektora)
 ```
 

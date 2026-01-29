@@ -234,6 +234,7 @@ export class STTModel extends BaseModel<STTConfig> {
         language?: string;
         task?: string;
         return_timestamps?: boolean;
+        abort_signal?: AbortSignal;
       } = {};
 
       if (options.language) {
@@ -246,6 +247,10 @@ export class STTModel extends BaseModel<STTConfig> {
 
       if (options.timestamps) {
         transcriptionOptions.return_timestamps = true;
+      }
+
+      if (options.signal) {
+        transcriptionOptions.abort_signal = options.signal;
       }
 
       const result = await pipeline(audioData, transcriptionOptions);

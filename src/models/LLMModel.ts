@@ -283,12 +283,30 @@ export class LLMModel extends BaseModel<LLMConfig> {
       ? messages
       : [{ role: 'user' as const, content: messages }];
 
-    // Add system prompt if provided
-    if (options.systemPrompt && messageArray[0]?.role !== 'system') {
+    // Add system prompt if provided or if needed for JSON/Tools
+    let systemPrompt = options.systemPrompt || '';
+
+    // JSON Mode prompt injection
+    if (options.responseFormat?.type === 'json_object') {
+      systemPrompt += '\n\nIMPORTANT: You must output a valid JSON object.';
+    }
+
+    // Tools prompt injection
+    if (options.tools && options.tools.length > 0) {
+      const toolsDesc = options.tools
+        .map(t => JSON.stringify(t.function))
+        .join('\n');
+      systemPrompt += `\n\nAvailable tools:\n${toolsDesc}\n\nTo use a tool, you MUST output a JSON object with a "tool_calls" key containing an array of tool usages. Each tool usage should have "name" and "arguments" (JSON string) keys.`;
+    }
+
+    if (systemPrompt && messageArray[0]?.role !== 'system') {
       messageArray.unshift({
         role: 'system',
-        content: options.systemPrompt,
+        content: systemPrompt.trim(),
       });
+    } else if (systemPrompt && messageArray[0]?.role === 'system') {
+      // Append to existing system prompt if matches
+      messageArray[0].content += '\n' + systemPrompt.trim();
     }
 
     // Build generation options
@@ -374,7 +392,7 @@ export class LLMModel extends BaseModel<LLMConfig> {
       );
       const completionTokens = this.estimateTokens(generatedMessage.content);
 
-      return {
+      const ret: ChatResponse = {
         content: generatedMessage.content,
         role: 'assistant',
         usage: {
@@ -384,6 +402,39 @@ export class LLMModel extends BaseModel<LLMConfig> {
         },
         finishReason: 'stop',
       };
+
+      // Attempt to parse tool calls if tools were provided
+      if (options.tools && options.tools.length > 0) {
+        try {
+          // Simple heuristic: look for JSON-like structure
+          const jsonMatch = generatedMessage.content.match(/\{[\s\S]*\}/);
+          if (jsonMatch) {
+            const parsed = JSON.parse(jsonMatch[0]);
+            if (parsed.tool_calls && Array.isArray(parsed.tool_calls)) {
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              ret.toolCalls = parsed.tool_calls.map((tc: any, idx: number) => ({
+                id: `call_${Date.now()}_${idx}`,
+                type: 'function',
+                function: {
+                  name: tc.name,
+                  arguments:
+                    typeof tc.arguments === 'string'
+                      ? tc.arguments
+                      : JSON.stringify(tc.arguments),
+                },
+              }));
+              ret.finishReason = 'tool_calls';
+            }
+          }
+        } catch (e) {
+          // Failed to parse tool calls, treat as regular text
+          this.logger.debug('[LLMModel] Failed to parse expected tool calls', {
+            error: e,
+          });
+        }
+      }
+
+      return ret;
     } catch (error) {
       throw new InferenceError(
         `Chat generation failed: ${(error as Error).message}`,
@@ -469,11 +520,30 @@ export class LLMModel extends BaseModel<LLMConfig> {
       ? messages
       : [{ role: 'user' as const, content: messages }];
 
-    if (options.systemPrompt && messageArray[0]?.role !== 'system') {
+    // Add system prompt if provided or if needed for JSON/Tools
+    let systemPrompt = options.systemPrompt || '';
+
+    // JSON Mode prompt injection
+    if (options.responseFormat?.type === 'json_object') {
+      systemPrompt += '\n\nIMPORTANT: You must output a valid JSON object.';
+    }
+
+    // Tools prompt injection
+    if (options.tools && options.tools.length > 0) {
+      const toolsDesc = options.tools
+        .map(t => JSON.stringify(t.function))
+        .join('\n');
+      systemPrompt += `\n\nAvailable tools:\n${toolsDesc}\n\nTo use a tool, you MUST output a JSON object with a "tool_calls" key containing an array of tool usages. Each tool usage should have "name" and "arguments" (JSON string) keys.`;
+    }
+
+    if (systemPrompt && messageArray[0]?.role !== 'system') {
       messageArray.unshift({
         role: 'system',
-        content: options.systemPrompt,
+        content: systemPrompt.trim(),
       });
+    } else if (systemPrompt && messageArray[0]?.role === 'system') {
+      // Append to existing system prompt if matches
+      messageArray[0].content += '\n' + systemPrompt.trim();
     }
 
     // Check if tokenizer has chat_template
