@@ -20,12 +20,11 @@ describe('CLI: listCommand', () => {
 
     it('should list models from cache directory', async () => {
         mockReaddirSync.mockReturnValue(['models--Xenova--test-model', 'other-file']);
-        mockStatSync.mockReturnValue({
-            isDirectory: () => true,
+        mockStatSync.mockImplementation((path: string) => ({
+            isDirectory: () => path.endsWith('models--Xenova--test-model'), // Tylko folder modelu jest katalogiem
             size: 1024,
             mtime: new Date('2023-01-01'),
-        });
-
+        }));
         await listCommand({ cacheDir: '/tmp/cache' });
 
         expect(mockReaddirSync).toHaveBeenCalledWith('/tmp/cache');

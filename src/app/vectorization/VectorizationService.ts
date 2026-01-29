@@ -795,10 +795,7 @@ export class VectorizationService {
     let text = content;
     let currentChunk = '';
 
-    const splitText = (
-      txt: string,
-      sepIndex: number = 0
-    ): string[] => {
+    const splitText = (txt: string, sepIndex: number = 0): string[] => {
       if (sepIndex >= separators.length) {
         // No more separators, split by character
         const result: string[] = [];
