@@ -9,6 +9,9 @@
   "main": "dist/index.js",
   "browser": "dist/index.js",
   "types": "dist/index.d.ts",
+  "bin": {
+    "lxrt": "./dist/cli/index.js"
+  },
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
@@ -161,6 +164,7 @@
   "dependencies": {
     "@mozilla/readability": "^0.6.0",
     "@types/jsdom": "^27.0.0",
+    "commander": "^14.0.2",
     "franc": "^6.2.0",
     "franc-min": "^6.2.0",
     "jsdom": "^27.4.0",
