@@ -6,52 +6,7 @@
 ---
 
 ## 📋 DO ZROBIENIA (TODO)
-
-### 🟡 Wysokie
-
-#### Abort/Cancel dla Inference
-**Problem:** Nie można przerwać trwającego inference w pełni (częściowo zaimplementowane w LLMModel).
-
-**Status:** Done — `AbortSignal` w `ChatOptions` oraz pełna propagacja do `Binding` i pipeline we wszystkich modelach (LLM, Embed, STT, TTS).
-
-**Nakład:** Zrobione (v0.7.0 feature)
-
----
-
-#### JSON Mode
-**Problem:** Brak gwarancji że model zwróci poprawny JSON.
-
-**Proponowane API:**
-```typescript
-const response = await provider.chat(messages, {
-    responseFormat: { 
-        type: "json_object",
-        schema: z.object({ talks: z.array(...) })
-    }
-});
-```
-
-**Nakład:** Zrobione (v0.7.0 feature)
-
----
-
-#### Function Calling
-**Problem:** Brak natywnego wsparcia dla tool/function calling.
-
-**Proponowane API:**
-```typescript
-const response = await provider.chat(messages, {
-    tools: [{
-        type: "function",
-        function: {
-            name: "extract_event",
-            parameters: { type: "object", properties: {...} }
-        }
-    }]
-});
-```
-
-**Nakład:** Zrobione (v0.7.0 feature)
+(Brak zaplanowanych zadań w tym momencie)
 
 ---
 
@@ -113,8 +68,8 @@ const response = await provider.chat(messages, {
 
 | Kategoria | Do zrobienia | Zakończone |
 |-----------|--------------|------------|
-| 🔴 Krytyczne | 0 | 6 |
-| 🟡 Wysokie | 3 | 1 |
-| 🟢 Średnie | 0 | 18 |
+| 🔴 Krytyczne | 0 | 9 |
+| 🟡 Wysokie | 0 | 1 |
+| 🟢 Średnie | 0 | 16 |
 | 🔵 Niskie | 0 | 8 |
-| **Razem** | **3** | **33** |
+| **Razem** | **0** | **34** |
