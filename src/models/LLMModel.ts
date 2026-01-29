@@ -68,17 +68,15 @@ export class LLMModel extends BaseModel<LLMConfig> {
     }) => void
   ): Promise<void> {
     if (this.loaded) {
-      if (typeof console !== 'undefined' && console.log) {
-        console.log('[LLMModel] load(): early-return, already loaded');
-      }
+      this.logger.debug('[LLMModel] load(): early-return, already loaded');
       return;
     }
 
     // Return existing loading promise to avoid concurrency issues
     if (this.loadingPromise) {
-      if (typeof console !== 'undefined' && console.log) {
-        console.log('[LLMModel] load(): waiting for concurrent load (Promise)');
-      }
+      this.logger.debug(
+        '[LLMModel] load(): waiting for concurrent load (Promise)'
+      );
       return this.loadingPromise;
     }
 
@@ -88,11 +86,10 @@ export class LLMModel extends BaseModel<LLMConfig> {
     this.loadingPromise = (async () => {
       try {
         const { pipeline, env } = await getTransformers();
-        if (typeof console !== 'undefined' && console.log) {
-          console.log('[LLMModel] load(): transformers loaded');
-        }
+        this.logger.debug('[LLMModel] load(): transformers loaded');
 
-        const isBrowser = typeof window !== 'undefined' && typeof navigator !== 'undefined';
+        const isBrowser =
+          typeof window !== 'undefined' && typeof navigator !== 'undefined';
 
         // Use centralized GPU detector
         const { gpuDetector } = await import('../core/gpu');
@@ -130,26 +127,22 @@ export class LLMModel extends BaseModel<LLMConfig> {
           })();
         }
 
-        if (typeof console !== 'undefined' && console.log) {
-          console.log('[LLMModel] load(): env', {
-            isBrowser,
-            supportsWebGPU,
-            desiredDevice,
-            tryOrder,
-          });
-        }
+        this.logger.debug('[LLMModel] load(): env', {
+          isBrowser,
+          supportsWebGPU,
+          desiredDevice,
+          tryOrder,
+        });
 
         const dtype = this.config.dtype || 'fp32';
-        if (typeof console !== 'undefined' && console.log) {
-          console.log('[LLMModel] load(): dtype resolved:', dtype);
-        }
+        this.logger.debug('[LLMModel] load(): dtype resolved', {
+          value: dtype,
+        });
 
         let lastError: Error | null = null;
         for (const dev of tryOrder) {
           try {
-            if (typeof console !== 'undefined' && console.log) {
-              console.log('[LLMModel] attempting device:', dev);
-            }
+            this.logger.debug('[LLMModel] attempting device', { value: dev });
 
             // Configure ONNX backend using BackendSelector if available
             if (this.backendSelector && env?.backends?.onnx) {
@@ -178,23 +171,19 @@ export class LLMModel extends BaseModel<LLMConfig> {
                     4,
                     Math.max(1, cores - 1)
                   );
-                  if (typeof console !== 'undefined' && console.log) {
-                    console.log('[LLMModel] WASM config:', {
-                      backendHint: onnxBackends.backendHint,
-                      simd: onnxBackends.wasm.simd,
-                      numThreads: onnxBackends.wasm.numThreads,
-                    });
-                  }
+                  this.logger.debug('[LLMModel] WASM config:', {
+                    backendHint: onnxBackends.backendHint,
+                    simd: onnxBackends.wasm.simd,
+                    numThreads: onnxBackends.wasm.numThreads,
+                  });
                 }
               } else if (dev === 'webgpu') {
                 if ('backendHint' in onnxBackends)
                   onnxBackends.backendHint = 'webgpu';
-                if (typeof console !== 'undefined' && console.log) {
-                  console.log('[LLMModel] WebGPU config:', {
-                    backendHint: onnxBackends.backendHint,
-                    adapterAvailable: webgpuAdapterAvailable,
-                  });
-                }
+                this.logger.debug('[LLMModel] WebGPU config:', {
+                  backendHint: onnxBackends.backendHint,
+                  adapterAvailable: webgpuAdapterAvailable,
+                });
               }
             }
 
@@ -209,8 +198,10 @@ export class LLMModel extends BaseModel<LLMConfig> {
               dtype,
             });
             const { OnnxConfigurator } = await import('../core/gpu');
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            const sessionOptions = OnnxConfigurator.getSessionOptions(dev as any);
+
+            const sessionOptions = OnnxConfigurator.getSessionOptions(
+              dev as any
+            );
 
             this.pipeline = await pipeline(
               'text-generation',
@@ -224,9 +215,9 @@ export class LLMModel extends BaseModel<LLMConfig> {
             );
 
             this.loaded = true;
-            if (typeof console !== 'undefined' && console.log) {
-              console.log('[LLMModel] loaded successfully with device:', dev);
-            }
+            this.logger.debug('[LLMModel] loaded successfully with device', {
+              value: dev,
+            });
             lastError = null;
             break;
           } catch (err) {
@@ -260,9 +251,9 @@ export class LLMModel extends BaseModel<LLMConfig> {
       } finally {
         this.loading = false;
         this.loadingPromise = null;
-        if (typeof console !== 'undefined' && console.log) {
-          console.log('[LLMModel] load(): finished, loaded=', this.loaded);
-        }
+        this.logger.debug('[LLMModel] load(): finished', {
+          loaded: this.loaded,
+        });
       }
     })();
 
@@ -586,7 +577,7 @@ export class LLMModel extends BaseModel<LLMConfig> {
 
     if (!tokenizer?.encode) {
       // Fallback to estimation if encode not available
-      console.warn(
+      this.logger.warn(
         '[LLMModel] Tokenizer.encode() not available, using estimation'
       );
       return this.estimateTokens(text);

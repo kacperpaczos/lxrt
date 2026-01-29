@@ -38,7 +38,7 @@ async function getTransformers() {
  * const model = new EmbeddingModel({ model: 'Xenova/all-MiniLM-L6-v2' });
  * await model.load();
  * const embedding = await model.embed('Hello world');
- * console.log(embedding.length); // 384
+ * this.logger.debug(embedding.length); // 384
  * ```
  */
 export class EmbeddingModel extends BaseModel<EmbeddingConfig> {
@@ -67,7 +67,7 @@ export class EmbeddingModel extends BaseModel<EmbeddingConfig> {
    * @example
    * ```typescript
    * await model.load((progress) => {
-   *   console.log(`${progress.status}: ${progress.progress}%`);
+   *   this.logger.debug(`${progress.status}: ${progress.progress}%`);
    * });
    * ```
    */
@@ -93,7 +93,8 @@ export class EmbeddingModel extends BaseModel<EmbeddingConfig> {
       try {
         const { pipeline, env } = await getTransformers();
 
-        const isBrowser = typeof window !== 'undefined' && typeof navigator !== 'undefined';
+        const isBrowser =
+          typeof window !== 'undefined' && typeof navigator !== 'undefined';
 
         // Use centralized GPU detector
         const { gpuDetector } = await import('../core/gpu');
@@ -130,24 +131,22 @@ export class EmbeddingModel extends BaseModel<EmbeddingConfig> {
               : [fallbackDevice, ...(fallbackDevice !== 'cpu' ? ['cpu'] : [])];
           })();
         }
-        if (typeof console !== 'undefined' && console.log) {
-          console.log('[EmbeddingModel] load(): env', {
-            isBrowser,
-            supportsWebGPU,
-            webgpuAdapterAvailable,
-            desiredDevice,
-            tryOrder,
-          });
-        }
+        this.logger.debug('[EmbeddingModel] load(): env', {
+          isBrowser,
+          supportsWebGPU,
+          webgpuAdapterAvailable,
+          desiredDevice,
+          tryOrder,
+        });
 
         const dtype = this.config.dtype || 'fp32';
 
         let lastError: Error | null = null;
         for (const dev of tryOrder) {
           try {
-            if (typeof console !== 'undefined' && console.log) {
-              console.log('[EmbeddingModel] attempting device:', dev);
-            }
+            this.logger.debug('[EmbeddingModel] attempting device', {
+              value: dev,
+            });
             // Configure ONNX backend using BackendSelector if available
             if (this.backendSelector && env?.backends?.onnx) {
               this.backendSelector.configureONNXBackend(dev, env);
@@ -170,23 +169,19 @@ export class EmbeddingModel extends BaseModel<EmbeddingConfig> {
                     4,
                     Math.max(1, cores - 1)
                   );
-                  if (typeof console !== 'undefined' && console.log) {
-                    console.log('[EmbeddingModel] WASM config:', {
-                      backendHint: onnxBackends.backendHint,
-                      simd: onnxBackends.wasm.simd,
-                      numThreads: onnxBackends.wasm.numThreads,
-                    });
-                  }
+                  this.logger.debug('[EmbeddingModel] WASM config:', {
+                    backendHint: onnxBackends.backendHint,
+                    simd: onnxBackends.wasm.simd,
+                    numThreads: onnxBackends.wasm.numThreads,
+                  });
                 }
               } else if (dev === 'webgpu') {
                 if ('backendHint' in onnxBackends)
                   onnxBackends.backendHint = 'webgpu';
-                if (typeof console !== 'undefined' && console.log) {
-                  console.log('[EmbeddingModel] WebGPU config:', {
-                    backendHint: onnxBackends.backendHint,
-                    adapterAvailable: webgpuAdapterAvailable,
-                  });
-                }
+                this.logger.debug('[EmbeddingModel] WebGPU config:', {
+                  backendHint: onnxBackends.backendHint,
+                  adapterAvailable: webgpuAdapterAvailable,
+                });
               }
             }
 
@@ -201,7 +196,9 @@ export class EmbeddingModel extends BaseModel<EmbeddingConfig> {
               dtype,
             });
             const { OnnxConfigurator } = await import('../core/gpu');
-            const sessionOptions = OnnxConfigurator.getSessionOptions(dev as any);
+            const sessionOptions = OnnxConfigurator.getSessionOptions(
+              dev as any
+            );
 
             this.pipeline = await pipeline(
               'feature-extraction',
@@ -215,12 +212,9 @@ export class EmbeddingModel extends BaseModel<EmbeddingConfig> {
             );
 
             this.loaded = true;
-            if (typeof console !== 'undefined' && console.log) {
-              console.log(
-                '[EmbeddingModel] loaded successfully with device:',
-                dev
-              );
-            }
+            this.logger.debug('[EmbeddingModel] loaded successfully', {
+              device: dev,
+            });
             lastError = null;
             break;
           } catch (err) {

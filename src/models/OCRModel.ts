@@ -40,16 +40,12 @@ export class OCRModel extends BaseModel<OCRConfig> {
     }) => void
   ): Promise<void> {
     if (this.loaded) {
-      if (typeof console !== 'undefined' && console.log) {
-        console.log('[OCRModel] load(): early-return, already loaded');
-      }
+      this.logger.debug('[OCRModel] load(): early-return, already loaded');
       return;
     }
 
     if (this.loadingPromise) {
-      if (typeof console !== 'undefined' && console.log) {
-        console.log('[OCRModel] load(): waiting for concurrent load');
-      }
+      this.logger.debug('[OCRModel] load(): waiting for concurrent load');
       return this.loadingPromise;
     }
 
@@ -74,9 +70,9 @@ export class OCRModel extends BaseModel<OCRConfig> {
         let device = desiredDevice || 'cpu';
 
         if (device === 'webgpu' && !webgpuAdapterAvailable) {
-          if (typeof console !== 'undefined' && console.warn) {
-            console.warn('[OCRModel] WebGPU requested but not available, falling back to wasm/cpu');
-          }
+          this.logger.warn(
+            '[OCRModel] WebGPU requested but not available, falling back to wasm/cpu'
+          );
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
           device = 'wasm' as any;
         }
@@ -87,16 +83,14 @@ export class OCRModel extends BaseModel<OCRConfig> {
           dtype: this.config.dtype || 'fp32',
         });
 
-        if (typeof console !== 'undefined' && console.log) {
-          console.log('[OCRModel] load(): Transformers.js OCR pipeline loaded');
-        }
+        this.logger.debug(
+          '[OCRModel] load(): Transformers.js OCR pipeline loaded'
+        );
 
         this.loaded = true;
         this.loading = false;
 
-        if (typeof console !== 'undefined' && console.log) {
-          console.log('[OCRModel] load(): completed');
-        }
+        this.logger.debug('[OCRModel] load(): completed');
       } catch (error) {
         this.loading = false;
         const modelError = new ModelLoadError(
@@ -104,16 +98,14 @@ export class OCRModel extends BaseModel<OCRConfig> {
           this.config.model || 'tesseract',
           'ocr'
         );
-        if (typeof console !== 'undefined' && console.error) {
-          console.error('[OCRModel] load(): error', modelError);
-        }
+        this.logger.error('[OCRModel] load(): error', {
+          error: modelError.message,
+        });
         throw modelError;
       } finally {
         this.loading = false;
         this.loadingPromise = null;
-        if (typeof console !== 'undefined' && console.log) {
-          console.log('[OCRModel] load(): finished');
-        }
+        this.logger.debug('[OCRModel] load(): finished');
       }
     })();
     return this.loadingPromise;
@@ -154,18 +146,18 @@ export class OCRModel extends BaseModel<OCRConfig> {
         usedLanguage: Array.isArray(options.language)
           ? options.language[0]
           : options.language ||
-          (Array.isArray(this.config.language)
-            ? this.config.language[0]
-            : this.config.language) ||
-          'eng',
+            (Array.isArray(this.config.language)
+              ? this.config.language[0]
+              : this.config.language) ||
+            'eng',
         // Pola zgodne z oczekiwaniami testów
         language: Array.isArray(options.language)
           ? options.language[0]
           : options.language ||
-          (Array.isArray(this.config.language)
-            ? this.config.language[0]
-            : this.config.language) ||
-          'eng',
+            (Array.isArray(this.config.language)
+              ? this.config.language[0]
+              : this.config.language) ||
+            'eng',
         regions: [],
         detectedLanguages: [],
       };
@@ -174,9 +166,9 @@ export class OCRModel extends BaseModel<OCRConfig> {
         `OCR recognition failed: ${error instanceof Error ? error.message : String(error)}`,
         'ocr'
       );
-      if (typeof console !== 'undefined' && console.error) {
-        console.error('[OCRModel] recognize(): error', inferenceError);
-      }
+      this.logger.error('[OCRModel] recognize(): error', {
+        error: inferenceError.message,
+      });
       throw inferenceError;
     }
   }

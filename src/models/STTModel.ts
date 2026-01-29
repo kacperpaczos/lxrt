@@ -41,16 +41,12 @@ export class STTModel extends BaseModel<STTConfig> {
     }) => void
   ): Promise<void> {
     if (this.loaded) {
-      if (typeof console !== 'undefined' && console.log) {
-        console.log('[STTModel] load(): early-return, already loaded');
-      }
+      this.logger.debug('[STTModel] load(): early-return, already loaded');
       return;
     }
 
     if (this.loadingPromise) {
-      if (typeof console !== 'undefined' && console.log) {
-        console.log('[STTModel] load(): waiting for concurrent load');
-      }
+      this.logger.debug('[STTModel] load(): waiting for concurrent load');
       return this.loadingPromise;
     }
 
@@ -58,11 +54,10 @@ export class STTModel extends BaseModel<STTConfig> {
     this.loadingPromise = (async () => {
       try {
         const { pipeline, env } = await getTransformers();
-        if (typeof console !== 'undefined' && console.log) {
-          console.log('[STTModel] load(): transformers loaded');
-        }
+        this.logger.debug('[STTModel] load(): transformers loaded');
 
-        const isBrowser = typeof window !== 'undefined' && typeof navigator !== 'undefined';
+        const isBrowser =
+          typeof window !== 'undefined' && typeof navigator !== 'undefined';
 
         // Use centralized GPU detector
         const { gpuDetector } = await import('../core/gpu');
@@ -100,27 +95,23 @@ export class STTModel extends BaseModel<STTConfig> {
           })();
         }
 
-        if (typeof console !== 'undefined' && console.log) {
-          console.log('[STTModel] load(): env', {
-            isBrowser,
-            supportsWebGPU,
-            webgpuAdapterAvailable,
-            desiredDevice,
-            tryOrder,
-          });
-        }
+        this.logger.debug('[STTModel] load(): env', {
+          isBrowser,
+          supportsWebGPU,
+          webgpuAdapterAvailable,
+          desiredDevice,
+          tryOrder,
+        });
 
         const dtype = this.config.dtype || 'q8';
-        if (typeof console !== 'undefined' && console.log) {
-          console.log('[STTModel] load(): dtype resolved:', dtype);
-        }
+        this.logger.debug('[STTModel] load(): dtype resolved', {
+          value: dtype,
+        });
 
         let lastError: Error | null = null;
         for (const dev of tryOrder) {
           try {
-            if (typeof console !== 'undefined' && console.log) {
-              console.log('[STTModel] attempting device:', dev);
-            }
+            this.logger.debug('[STTModel] attempting device', { value: dev });
             // Configure ONNX backend using BackendSelector if available
             if (this.backendSelector && env?.backends?.onnx) {
               this.backendSelector.configureONNXBackend(dev, env);
@@ -143,23 +134,19 @@ export class STTModel extends BaseModel<STTConfig> {
                     4,
                     Math.max(1, cores - 1)
                   );
-                  if (typeof console !== 'undefined' && console.log) {
-                    console.log('[STTModel] WASM config:', {
-                      backendHint: onnxBackends.backendHint,
-                      simd: onnxBackends.wasm.simd,
-                      numThreads: onnxBackends.wasm.numThreads,
-                    });
-                  }
+                  this.logger.debug('[STTModel] WASM config:', {
+                    backendHint: onnxBackends.backendHint,
+                    simd: onnxBackends.wasm.simd,
+                    numThreads: onnxBackends.wasm.numThreads,
+                  });
                 }
               } else if (dev === 'webgpu') {
                 if ('backendHint' in onnxBackends)
                   onnxBackends.backendHint = 'webgpu';
-                if (typeof console !== 'undefined' && console.log) {
-                  console.log('[STTModel] WebGPU config:', {
-                    backendHint: onnxBackends.backendHint,
-                    adapterAvailable: webgpuAdapterAvailable,
-                  });
-                }
+                this.logger.debug('[STTModel] WebGPU config:', {
+                  backendHint: onnxBackends.backendHint,
+                  adapterAvailable: webgpuAdapterAvailable,
+                });
               }
             }
 
@@ -184,9 +171,9 @@ export class STTModel extends BaseModel<STTConfig> {
             );
 
             this.loaded = true;
-            if (typeof console !== 'undefined' && console.log) {
-              console.log('[STTModel] loaded successfully with device:', dev);
-            }
+            this.logger.debug('[STTModel] loaded successfully with device', {
+              value: dev,
+            });
             lastError = null;
             break;
           } catch (err) {

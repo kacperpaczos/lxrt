@@ -5,6 +5,7 @@
 import type { Modality, ModelConfig } from '../core/types';
 import type { IModel } from '@domain/models';
 import { ModelNotLoadedError } from '@domain/errors';
+import { createLogBus, type ILogBus } from '../core/logging/LogBus';
 
 export abstract class BaseModel<TConfig extends ModelConfig = ModelConfig>
   implements IModel
@@ -15,10 +16,12 @@ export abstract class BaseModel<TConfig extends ModelConfig = ModelConfig>
   protected loaded = false;
   protected loading = false;
   protected loadingPromise: Promise<void> | null = null;
+  protected logger: ILogBus;
 
   constructor(modality: Modality, config: TConfig) {
     this.modality = modality;
     this.config = config;
+    this.logger = createLogBus('BaseModel');
   }
 
   /**
@@ -97,11 +100,10 @@ export abstract class BaseModel<TConfig extends ModelConfig = ModelConfig>
    * Get the raw pipeline (for caching)
    */
   getRawPipeline(): unknown {
-    if (typeof console !== 'undefined' && console.log) {
-      console.log(
-        `[BaseModel] getRawPipeline: loaded=${this.loaded}, pipeline=${!!this.pipeline}`
-      );
-    }
+    this.logger.debug('getRawPipeline', {
+      loaded: this.loaded,
+      pipeline: !!this.pipeline,
+    });
     return this.pipeline;
   }
 

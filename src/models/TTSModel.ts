@@ -44,23 +44,17 @@ export class TTSModel extends BaseModel<TTSConfig> {
     if (this.config.skip) {
       this.loaded = true;
       this.loading = false;
-      if (typeof console !== 'undefined' && console.log) {
-        console.log('[TTSModel] load(): skipped - TTS is disabled');
-      }
+      this.logger.debug('[TTSModel] load(): skipped - TTS is disabled');
       return;
     }
 
     if (this.loaded) {
-      if (typeof console !== 'undefined' && console.log) {
-        console.log('[TTSModel] load(): early-return, already loaded');
-      }
+      this.logger.debug('[TTSModel] load(): early-return, already loaded');
       return;
     }
 
     if (this.loadingPromise) {
-      if (typeof console !== 'undefined' && console.log) {
-        console.log('[TTSModel] load(): waiting for concurrent load');
-      }
+      this.logger.debug('[TTSModel] load(): waiting for concurrent load');
       return this.loadingPromise;
     }
 
@@ -68,11 +62,10 @@ export class TTSModel extends BaseModel<TTSConfig> {
     this.loadingPromise = (async () => {
       try {
         const { pipeline, env } = await getTransformers();
-        if (typeof console !== 'undefined' && console.log) {
-          console.log('[TTSModel] load(): transformers loaded');
-        }
+        this.logger.debug('[TTSModel] load(): transformers loaded');
 
-        const isBrowser = typeof window !== 'undefined' && typeof navigator !== 'undefined';
+        const isBrowser =
+          typeof window !== 'undefined' && typeof navigator !== 'undefined';
 
         // Use centralized GPU detector
         const { gpuDetector } = await import('../core/gpu');
@@ -110,27 +103,23 @@ export class TTSModel extends BaseModel<TTSConfig> {
           })();
         }
 
-        if (typeof console !== 'undefined' && console.log) {
-          console.log('[TTSModel] load(): env', {
-            isBrowser,
-            supportsWebGPU,
-            webgpuAdapterAvailable,
-            desiredDevice,
-            tryOrder,
-          });
-        }
+        this.logger.debug('[TTSModel] load(): env', {
+          isBrowser,
+          supportsWebGPU,
+          webgpuAdapterAvailable,
+          desiredDevice,
+          tryOrder,
+        });
 
         const dtype = this.config.dtype || 'fp32';
-        if (typeof console !== 'undefined' && console.log) {
-          console.log('[TTSModel] load(): dtype resolved:', dtype);
-        }
+        this.logger.debug('[TTSModel] load(): dtype resolved', {
+          value: dtype,
+        });
 
         let lastError: Error | null = null;
         for (const dev of tryOrder) {
           try {
-            if (typeof console !== 'undefined' && console.log) {
-              console.log('[TTSModel] attempting device:', dev);
-            }
+            this.logger.debug('[TTSModel] attempting device', { value: dev });
 
             // Configure ONNX backend using BackendSelector if available
             if (this.backendSelector && env?.backends?.onnx) {
@@ -154,23 +143,19 @@ export class TTSModel extends BaseModel<TTSConfig> {
                     4,
                     Math.max(1, cores - 1)
                   );
-                  if (typeof console !== 'undefined' && console.log) {
-                    console.log('[TTSModel] WASM config:', {
-                      backendHint: onnxBackends.backendHint,
-                      simd: onnxBackends.wasm.simd,
-                      numThreads: onnxBackends.wasm.numThreads,
-                    });
-                  }
+                  this.logger.debug('[TTSModel] WASM config:', {
+                    backendHint: onnxBackends.backendHint,
+                    simd: onnxBackends.wasm.simd,
+                    numThreads: onnxBackends.wasm.numThreads,
+                  });
                 }
               } else if (dev === 'webgpu') {
                 if ('backendHint' in onnxBackends)
                   onnxBackends.backendHint = 'webgpu';
-                if (typeof console !== 'undefined' && console.log) {
-                  console.log('[TTSModel] WebGPU config:', {
-                    backendHint: onnxBackends.backendHint,
-                    adapterAvailable: webgpuAdapterAvailable,
-                  });
-                }
+                this.logger.debug('[TTSModel] WebGPU config:', {
+                  backendHint: onnxBackends.backendHint,
+                  adapterAvailable: webgpuAdapterAvailable,
+                });
               }
             }
 
@@ -189,21 +174,17 @@ export class TTSModel extends BaseModel<TTSConfig> {
             );
 
             this.loaded = true;
-            if (typeof console !== 'undefined' && console.log) {
-              console.log('[TTSModel] loaded successfully with device:', dev);
-            }
+            this.logger.debug('[TTSModel] loaded successfully with device', {
+              value: dev,
+            });
             lastError = null;
             break;
           } catch (e) {
             lastError = e instanceof Error ? e : new Error(String(e));
-            if (typeof console !== 'undefined' && console.log) {
-              console.log(
-                '[TTSModel] device failed:',
-                dev,
-                '| error:',
-                (lastError as Error).message
-              );
-            }
+            this.logger.debug('[TTSModel] device failed', {
+              device: dev,
+              error: (lastError as Error).message,
+            });
           }
         }
 
@@ -234,9 +215,7 @@ export class TTSModel extends BaseModel<TTSConfig> {
   async synthesize(text: string, options: TTSOptions = {}): Promise<Blob> {
     // Jeśli TTS jest skipowany, zwróć pusty audio blob
     if (this.config.skip) {
-      if (typeof console !== 'undefined' && console.log) {
-        console.log('[TTSModel] synthesize(): skipped - TTS is disabled');
-      }
+      this.logger.debug('[TTSModel] synthesize(): skipped - TTS is disabled');
       // Zwróć pusty WAV blob (silencium)
       return audioConverter.toWavBlob(new Float32Array(0), 22050, {
         channels: 1,
@@ -269,20 +248,15 @@ export class TTSModel extends BaseModel<TTSConfig> {
           speakerEmbeddings = new Float32Array(profile.embeddings);
           voiceParams = { ...profile.parameters };
 
-          if (typeof console !== 'undefined' && console.log) {
-            console.log(
-              '[TTSModel] synthesize(): using voice profile:',
-              profile.name,
-              `(${profile.gender}, ${profile.parameters.style})`
-            );
-          }
+          this.logger.debug('[TTSModel] synthesize(): using voice profile', {
+            name: profile.name,
+            gender: profile.gender,
+            style: profile.parameters.style,
+          });
         } else {
-          if (typeof console !== 'undefined' && console.warn) {
-            console.warn(
-              '[TTSModel] synthesize(): voice profile not found:',
-              voiceProfileId
-            );
-          }
+          this.logger.warn('[TTSModel] synthesize(): voice profile not found', {
+            voiceProfileId,
+          });
         }
       }
 
@@ -290,34 +264,26 @@ export class TTSModel extends BaseModel<TTSConfig> {
       if (options.speaker !== undefined) {
         if (typeof options.speaker === 'string') {
           // Handle string speaker (not supported in this implementation)
-          if (typeof console !== 'undefined' && console.warn) {
-            console.warn(
-              '[TTSModel] synthesize(): string speaker not supported, using default'
-            );
-          }
+          this.logger.warn(
+            '[TTSModel] synthesize(): string speaker not supported, using default'
+          );
         } else {
           speakerEmbeddings = new Float32Array(options.speaker);
-          if (typeof console !== 'undefined' && console.log) {
-            console.log(
-              '[TTSModel] synthesize(): using direct speaker embeddings'
-            );
-          }
+          this.logger.debug(
+            '[TTSModel] synthesize(): using direct speaker embeddings'
+          );
         }
       } else if (this.config.speaker !== undefined) {
         if (typeof this.config.speaker === 'string') {
           // Handle string speaker (not supported in this implementation)
-          if (typeof console !== 'undefined' && console.warn) {
-            console.warn(
-              '[TTSModel] synthesize(): string speaker not supported, using default'
-            );
-          }
+          this.logger.warn(
+            '[TTSModel] synthesize(): string speaker not supported, using default'
+          );
         } else {
           speakerEmbeddings = new Float32Array(this.config.speaker);
-          if (typeof console !== 'undefined' && console.log) {
-            console.log(
-              '[TTSModel] synthesize(): using config speaker embeddings'
-            );
-          }
+          this.logger.debug(
+            '[TTSModel] synthesize(): using config speaker embeddings'
+          );
         }
       }
 
@@ -334,15 +300,10 @@ export class TTSModel extends BaseModel<TTSConfig> {
         ...voiceParams,
       } as Record<string, unknown>;
 
-      if (typeof console !== 'undefined' && console.log) {
-        const speakerType = 'Float32Array';
-        console.log(
-          '[TTSModel] synthesize(): using speaker embeddings type:',
-          speakerType,
-          'with parameters:',
-          voiceParams
-        );
-      }
+      this.logger.debug('[TTSModel] synthesize(): speaker embeddings', {
+        type: 'Float32Array',
+        voiceParams,
+      });
 
       const result = await pipeline(text, inferOptions);
 
