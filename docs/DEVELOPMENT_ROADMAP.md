@@ -5,6 +5,13 @@
 
 ---
 
+> **See also:**
+> - [Product Strategy & Roadmap](./PRODUCT_STRATEGY.md)
+> - [High Level Interfaces (Concepts)](./concepts/HIGH_LEVEL_INTERFACES.md)
+> - [WebGPU Guide](./WEBGPU_GUIDE.md)
+
+---
+
 ## 📅 v0.7.1 Goals
 
 ### 1. OCR Model Improvements
@@ -25,6 +32,25 @@ Increase test coverage to ensure stability of the newly added features (JSON Mod
 - [ ] **Tool Calling Scenarios:** Test complex multi-tool scenarios.
 - [ ] **OCR Metadata:** Add tests for new bbox/confidence outputs.
 
+### 3. Architecture & Quality Stabilization (Audit Remediation)
+**Priority:** Critical
+**Status:** Planned
+
+Addressing critical tech debt and architectural risks identified in the 2026 Audit.
+
+- [ ] **Decouple Core & Domain:**
+    - Split `src/core/types.ts` (God Object) into domain-specific type definitions (Config, Events, Models).
+    - Remove circular dependencies between `domain` and `core`.
+- [ ] **Dependency Injection Refactor:**
+    - Refactor `ModelManager` to use DI / Factory pattern instead of direct model instantiation.
+    - Create `ModelFactory` in `src/infra` to handle concrete implementations.
+- [ ] **Unit Testing Gap:**
+    - Create dedicated unit tests for `ModelManager` (mocking the backend/models).
+    - ensure 100% coverage of state transitions and error handling paths.
+- [ ] **Code Structure Cleanup:**
+    - Move `VoiceProfileRegistry` to a dedicated Domain Service or Config layer.
+    - Extract `LogBus` to `src/infra/logging`.
+
 ---
 
 ## 🔮 Future Work (v0.8.0 candidate)
@@ -37,6 +63,23 @@ To support more advanced use cases like autonomous agents and easy implementatio
 
 - [ ] **Agentic Examples:** Create robust examples demonstrating "Long-term Memory" (using Vector Store) and multi-step reasoning.
 - [ ] **UI Library:** Develop a set of ready-to-use React/Vue components (e.g., `<ChatWindow />`, `<AudioVisualizer />`) to speed up frontend integration.
+
+
+### 4. Modernization & Redesign (Tier-1 Quality)
+**Priority:** Strategic (v0.8.0+)
+**Status:** Inception
+
+Long-term modernization goals to achieve Tier-1 library status.
+
+- [ ] **Infrastructure Modernization:**
+    - [ ] Modular Architecture (Split into `@lxrt/core`, `@lxrt/llm`, etc.).
+    - [ ] Plugin System for third-party model support.
+- [ ] **Ecosystem Alignment:**
+    - [ ] Full WASM/WebGPU abstraction layer (Hardware Agnostic).
+    - [ ] OpenTelemetry Integration for observability.
+- [ ] **Tooling & DX:**
+    - [ ] Changeset/Semantic Release automation.
+    - [ ] Multi-platform CI (Windows/MacOS) verification.
 
 ---
 
